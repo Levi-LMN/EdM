@@ -1,0 +1,115 @@
+<!-- assessments/list.html -->
+{% extends "base.html" %}
+
+{% block title %}Fee Assessments - School Fees Management{% endblock %}
+{% block page_title %}Fee Assessments{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('bulk_create_assessments') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Bulk Assessment
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-2">
+                <label for="year" class="form-label">Year</label>
+                <select class="form-select" id="year" name="year">
+                    <option value="">All Years</option>
+                    {% for term in terms %}
+                        {% if not loop.index0 or terms[loop.index0-1].year != term.year %}
+                        <option value="{{ term.year }}" {{ 'selected' if filters.year == term.year }}>
+                            {{ term.year }}
+                        </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="term" class="form-label">Term</label>
+                <select class="form-select" id="term" name="term">
+                    <option value="">All Terms</option>
+                    <option value="1" {{ 'selected' if filters.term == 1 }}>Term 1</option>
+                    <option value="2" {{ 'selected' if filters.term == 2 }}>Term 2</option>
+                    <option value="3" {{ 'selected' if filters.term == 3 }}>Term 3</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="student_search" class="form-label">Student Search</label>
+                <input type="text" class="form-control" id="student_search" name="student_id"
+                       placeholder="Type student name or admission no." value="{{ filters.student_id or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-2"></i>Filter
+                    </button>
+                    <a href="{{ url_for('list_assessments') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if assessments %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Admission No</th>
+                        <th>Class</th>
+                        <th>Term/Year</th>
+                        <th>Total Amount</th>
+                        <th>Lines</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assessment in assessments %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('view_student', student_id=assessment.student.id) }}">
+                                {{ assessment.student.first_name }} {{ assessment.student.last_name }}
+                            </a>
+                        </td>
+                        <td>{{ assessment.student.admission_no }}</td>
+                        <td>{{ assessment.student.class_obj.name }}</td>
+                        <td>Term {{ assessment.term }}/{{ assessment.year }}</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(assessment.total_amount()) }}</td>
+                        <td>{{ assessment.lines|length }} items</td>
+                        <td>{{ assessment.assessed_at.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            <a href="{{ url_for('view_assessment', assessment_id=assessment.id) }}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+            <h5>No assessments found</h5>
+            <p class="text-muted">No assessments match your current filters.</p>
+            <a href="{{ url_for('bulk_create_assessments') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Assessments
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

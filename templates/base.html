@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduManage Pro{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --modern-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
+            --shadow-hover: 0 15px 35px rgba(31, 38, 135, 0.5);
+            --border-radius: 20px;
+            --border-radius-small: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        /* Mobile hamburger button */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1060;
+            background: var(--modern-gradient);
+            border: none;
+            border-radius: 15px;
+            width: 50px;
+            height: 50px;
+            color: white;
+            box-shadow: var(--shadow-light);
+        }
+
+        .sidebar {
+            background: var(--modern-gradient);
+            backdrop-filter: blur(20px);
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-light);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-logo {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-small);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .brand-logo:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .brand-title {
+            color: white;
+            font-weight: 700;
+            font-size: 1.4rem;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .brand-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            padding-left: 1rem;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            transition: var(--transition);
+            border-radius: var(--border-radius-small);
+            margin-bottom: 0.3rem;
+            padding: 0.8rem 1rem;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar .nav-link::before {
+            display: none;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 0.8rem;
+        }
+
+        .main-content {
+            background: transparent;
+            padding: 2rem;
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--border-radius);
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-title {
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            margin-bottom: 1.5rem;
+        }
+
+        .card:hover {
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+            padding: 1.5rem 2rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            border-radius: var(--border-radius-small);
+            font-weight: 500;
+            transition: var(--transition);
+            border: none;
+            padding: 0.7rem 1.5rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn:last-child {
+            margin-right: 0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid #667eea;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-outline-primary:hover {
+            background: #667eea;
+        }
+
+        .table {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: var(--border-radius-small);
+            overflow: hidden;
+        }
+
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #2d3748;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 1rem;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .alert {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--border-radius-small);
+            border-left: 4px solid;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .alert-success {
+            border-left-color: #48bb78;
+            background: linear-gradient(135deg, rgba(72, 187, 120, 0.1), rgba(72, 187, 120, 0.05));
+        }
+
+        .alert-danger {
+            border-left-color: #f56565;
+            background: linear-gradient(135deg, rgba(245, 101, 101, 0.1), rgba(245, 101, 101, 0.05));
+        }
+
+        .alert-info {
+            border-left-color: #4299e1;
+            background: linear-gradient(135deg, rgba(66, 153, 225, 0.1), rgba(66, 153, 225, 0.05));
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 1050;
+                width: 280px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                border-radius: 0 25px 25px 0;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                padding: 4rem 1rem 1rem;
+                border-radius: 0;
+                width: 100%;
+            }
+
+            .page-header {
+                padding: 1rem 1.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .card-header {
+                padding: 1rem 1.5rem;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Loading Animation */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile toggle button -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse" id="sidebarMenu">
+                <div class="position-sticky pt-3 sidebar-content">
+                    <div class="brand-logo">
+                        <i class="fas fa-graduation-cap" style="font-size: 2rem; color: white; margin-bottom: 0.5rem;"></i>
+                        <h4 class="brand-title">EduManage Pro</h4>
+                        <p class="brand-subtitle">Smart School Solutions</p>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Main</div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                    <i class="fas fa-home"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('list_terms') }}">
+                                    <i class="fas fa-calendar-alt"></i>Terms
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('list_classes') }}">
+                                    <i class="fas fa-chalkboard-teacher"></i>Classes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('list_students') }}">
+                                    <i class="fas fa-user-graduate"></i>Students
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Finance</div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('list_fee_items') }}">
+                                    <i class="fas fa-tags"></i>Fee Items
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('list_fee_rates') }}">
+                                    <i class="fas fa-dollar-sign"></i>Fee Rates
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('list_assessments') }}">
+                                    <i class="fas fa-file-invoice-dollar"></i>Assessments
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('list_payments') }}">
+                                    <i class="fas fa-credit-card"></i>Payments
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Analytics</div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('reports_menu') }}">
+                                    <i class="fas fa-chart-line"></i>Reports
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">System</div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('initialize_database') }}">
+                                    <i class="fas fa-database"></i>Initialize DB
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+                <div class="page-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        {% block page_actions %}{% endblock %}
+                    </div>
+                </div>
+
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'check-circle' }} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Page content -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarMenu');
+            sidebar.classList.toggle('show');
+        }
+
+        // Auto-hide alerts with smooth animation
+        setTimeout(function() {
+            $('.alert').each(function() {
+                $(this).fadeOut('slow', function() {
+                    $(this).remove();
+                });
+            });
+        }, 5000);
+
+        // Add active class to current nav item with smooth transition
+        $(document).ready(function() {
+            var currentPath = window.location.pathname;
+
+            // Remove any existing active classes first
+            $('.nav-link').removeClass('active');
+
+            // Find and activate the matching nav link
+            $('.nav-link').each(function() {
+                var linkHref = $(this).attr('href');
+                if (linkHref && linkHref === currentPath) {
+                    $(this).addClass('active');
+                }
+            });
+        });
+
+        // Add loading states for better UX
+        $('form').on('submit', function() {
+            $(this).find('button[type="submit"]').html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
+        });
+
+        // Enhanced hover effects
+        $('.card').on('mouseenter', function() {
+            $(this).find('.card-header').css('color', '#667eea');
+        }).on('mouseleave', function() {
+            $(this).find('.card-header').css('color', '');
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

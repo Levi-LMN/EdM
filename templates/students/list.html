@@ -1,0 +1,287 @@
+<!-- students/list.html -->
+{% extends "base.html" %}
+
+{% block title %}Students - EduManage Pro{% endblock %}
+{% block page_title %}Students{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('create_student') }}" class="btn btn-primary">
+    <i class="fas fa-user-plus me-2"></i>Add Student
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="class_id" class="form-label">Class</label>
+                <select class="form-select" id="class_id" name="class_id" onchange="loadStreams(this.value)">
+                    <option value="">All Classes</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {{ 'selected' if filters.class_id == class.id }}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="stream_id" class="form-label">Stream</label>
+                <select class="form-select" id="stream_id" name="stream_id">
+                    <option value="">All Streams</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="student_type" class="form-label">Type</label>
+                <select class="form-select" id="student_type" name="student_type">
+                    <option value="">All Types</option>
+                    <option value="DAY" {{ 'selected' if filters.student_type == 'DAY' }}>Day</option>
+                    <option value="BOARDER" {{ 'selected' if filters.student_type == 'BOARDER' }}>Boarder</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="per_page" class="form-label">Per Page</label>
+                <select class="form-select" id="per_page" name="per_page">
+                    <option value="10" {{ 'selected' if filters.per_page == 10 }}>10</option>
+                    <option value="25" {{ 'selected' if filters.per_page == 25 }}>25</option>
+                    <option value="50" {{ 'selected' if filters.per_page == 50 }}>50</option>
+                    <option value="100" {{ 'selected' if filters.per_page == 100 }}>100</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search"
+                       placeholder="Name or admission no." value="{{ filters.search }}">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results Summary -->
+{% if students.items or filters.search or filters.class_id or filters.stream_id or filters.student_type %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0">
+                    Showing <strong>{{ students.items|length }}</strong> of <strong>{{ students.total }}</strong> students
+                    {% if students.pages > 1 %}
+                    (Page {{ students.page }} of {{ students.pages }})
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-6 text-end">
+                {% if filters.search or filters.class_id or filters.stream_id or filters.student_type %}
+                <a href="{{ url_for('list_students') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear Filters
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        {% if students.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Admission No.</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Stream</th>
+                        <th>Type</th>
+                        <th>Balance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students.items %}
+                    {% set balance = student.get_current_balance() %}
+                    <tr>
+                        <td><strong>{{ student.admission_no }}</strong></td>
+                        <td>{{ student.first_name }} {{ student.last_name }}</td>
+                        <td>{{ student.class_obj.name }}</td>
+                        <td>{{ student.stream.name if student.stream else 'N/A' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'primary' if student.student_type == 'DAY' else 'info' }}">
+                                {{ student.student_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-{{ 'success' if balance.balance <= 0 else 'warning' }}">
+                                KSh {{ "{:,.2f}".format(balance.balance) }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('view_student', student_id=student.id) }}"
+                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('create_payment', student_id=student.id) }}"
+                                   class="btn btn-sm btn-outline-success" title="Add Payment">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if students.pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div>
+                <small class="text-muted">
+                    Showing {{ ((students.page - 1) * students.per_page) + 1 }} to
+                    {{ ((students.page - 1) * students.per_page) + students.items|length }} of {{ students.total }} entries
+                </small>
+            </div>
+            <nav aria-label="Students pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <!-- Previous Page -->
+                    <li class="page-item {{ 'disabled' if not students.has_prev }}">
+                        {% if students.has_prev %}
+                        <a class="page-link" href="{{ url_for('list_students', page=students.prev_num, **filters) }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        {% else %}
+                        <span class="page-link">
+                            <i class="fas fa-chevron-left"></i>
+                        </span>
+                        {% endif %}
+                    </li>
+
+                    <!-- First Page -->
+                    {% if students.page > 3 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('list_students', page=1, **filters) }}">1</a>
+                    </li>
+                    {% if students.page > 4 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+
+                    <!-- Page Numbers -->
+                    {% for page_num in range([students.page - 2, 1]|max, [students.page + 3, students.pages + 1]|min) %}
+                    <li class="page-item {{ 'active' if page_num == students.page }}">
+                        {% if page_num == students.page %}
+                        <span class="page-link">{{ page_num }}</span>
+                        {% else %}
+                        <a class="page-link" href="{{ url_for('list_students', page=page_num, **filters) }}">{{ page_num }}</a>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+
+                    <!-- Last Page -->
+                    {% if students.page < students.pages - 2 %}
+                    {% if students.page < students.pages - 3 %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('list_students', page=students.pages, **filters) }}">{{ students.pages }}</a>
+                    </li>
+                    {% endif %}
+
+                    <!-- Next Page -->
+                    <li class="page-item {{ 'disabled' if not students.has_next }}">
+                        {% if students.has_next %}
+                        <a class="page-link" href="{{ url_for('list_students', page=students.next_num, **filters) }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% else %}
+                        <span class="page-link">
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5>No students found</h5>
+            {% if filters.search or filters.class_id or filters.stream_id or filters.student_type %}
+            <p class="text-muted">No students match your current filters.</p>
+            <div class="mt-3">
+                <a href="{{ url_for('list_students') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-times me-1"></i>Clear Filters
+                </a>
+                <a href="{{ url_for('create_student') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add Student
+                </a>
+            </div>
+            {% else %}
+            <p class="text-muted">Get started by adding your first student.</p>
+            <a href="{{ url_for('create_student') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Add Student
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadStreams(classId) {
+    const streamSelect = document.getElementById('stream_id');
+    streamSelect.innerHTML = '<option value="">All Streams</option>';
+
+    if (classId) {
+        fetch(`/get_streams/${classId}`)
+            .then(response => response.json())
+            .then(streams => {
+                streams.forEach(stream => {
+                    const option = document.createElement('option');
+                    option.value = stream.id;
+                    option.textContent = stream.name;
+                    if ({{ filters.stream_id or 'null' }} == stream.id) {
+                        option.selected = true;
+                    }
+                    streamSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading streams:', error);
+            });
+    }
+}
+
+// Load streams on page load if class is selected
+document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.getElementById('class_id');
+    if (classSelect.value) {
+        loadStreams(classSelect.value);
+    }
+});
+
+// Auto-submit form when per_page changes
+document.getElementById('per_page').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %}

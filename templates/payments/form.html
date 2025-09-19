@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Record Payment - School Fees Management{% endblock %}
+{% block page_title %}Record Payment{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-credit-card me-2"></i>Payment Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="student_search" class="form-label">Student <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="student_search"
+                                       placeholder="Type to search student..." autocomplete="off">
+                                <input type="hidden" id="student_id" name="student_id"
+                                       value="{{ student.id if student else '' }}" required>
+                                <div id="student_results" class="dropdown-menu" style="display: none;"></div>
+                                {% if student %}
+                                <div class="mt-2">
+                                    <div class="alert alert-info">
+                                        Selected: <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                                        ({{ student.admission_no }})
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="payment_date" class="form-label">Payment Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="payment_date" name="payment_date"
+                                       value="{{ today }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">KSh</span>
+                                    <input type="number" class="form-control" id="amount" name="amount"
+                                           step="0.01" min="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="mode" class="form-label">Payment Mode <span class="text-danger">*</span></label>
+                                <select class="form-select" id="mode" name="mode" required>
+                                    <option value="">Select Payment Mode</option>
+                                    <option value="CASH">Cash</option>
+                                    <option value="MPESA">M-PESA</option>
+                                    <option value="BANK">Bank Transfer</option>
+                                    <option value="CHEQUE">Cheque</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="receipt_no" class="form-label">Receipt Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="receipt_no" name="receipt_no"
+                                       value="{{ receipt_no }}" readonly>
+                                <div class="form-text">Auto-generated receipt number</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="note" class="form-label">Note</label>
+                                <input type="text" class="form-control" id="note" name="note"
+                                       placeholder="Optional payment note">
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if student %}
+                    <div class="card bg-light">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Student Balance Info</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <small class="text-muted">Current Balance</small><br>
+                                    <strong class="text-warning">
+                                        KSh {{ "{:,.2f}".format(student.get_current_balance().balance) }}
+                                    </strong>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">Total Assessed</small><br>
+                                    <span>
+                                        KSh {{ "{:,.2f}".format(student.get_current_balance().total_assessed) }}
+                                    </span>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">Total Paid</small><br>
+                                    <span>
+                                        KSh {{ "{:,.2f}".format(student.get_current_balance().total_paid) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('list_payments') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Record Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let searchTimeout;
+const studentSearch = document.getElementById('student_search');
+const studentId = document.getElementById('student_id');
+const studentResults = document.getElementById('student_results');
+
+{% if student %}
+studentSearch.value = '{{ student.first_name }} {{ student.last_name }} ({{ student.admission_no }})';
+{% endif %}
+
+studentSearch.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+
+    if (query.length < 2) {
+        studentResults.style.display = 'none';
+        studentId.value = '';
+        return;
+    }
+
+    searchTimeout = setTimeout(() => {
+        fetch(`/search/students?q=${encodeURIComponent(query)}&limit=10`)
+            .then(response => response.json())
+            .then(students => {
+                if (students.length > 0) {
+                    studentResults.innerHTML = students.map(student =>
+                        `<a class="dropdown-item" href="#" data-id="${student.id}">
+                            ${student.name} (${student.admission_no}) - ${student.class}
+                            <small class="text-muted d-block">Balance: KSh ${student.current_balance.toLocaleString()}</small>
+                        </a>`
+                    ).join('');
+                    studentResults.style.display = 'block';
+                } else {
+                    studentResults.innerHTML = '<div class="dropdown-item-text">No students found</div>';
+                    studentResults.style.display = 'block';
+                }
+            });
+    }, 300);
+});
+
+studentResults.addEventListener('click', function(e) {
+    if (e.target.closest('.dropdown-item')) {
+        e.preventDefault();
+        const studentData = e.target.closest('.dropdown-item');
+        studentSearch.value = studentData.textContent.split(' - ')[0];
+        studentId.value = studentData.dataset.id;
+        studentResults.style.display = 'none';
+
+        if (studentData.dataset.id) {
+            window.location.href = `{{ url_for('create_payment') }}?student_id=${studentData.dataset.id}`;
+        }
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (!studentSearch.contains(e.target) && !studentResults.contains(e.target)) {
+        studentResults.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

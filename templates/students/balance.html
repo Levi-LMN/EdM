@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Balance Details - {{ student.first_name }} {{ student.last_name }} - School Fees Management{% endblock %}
+
+{% block page_title %}Balance Details - {{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('view_student', student_id=student.id) }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Student
+</a>
+<a href="{{ url_for('create_payment', student_id=student.id) }}" class="btn btn-success">
+    <i class="fas fa-plus me-2"></i>Record Payment
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>Student Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Admission No:</strong><br>
+                        {{ student.admission_no }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Full Name:</strong><br>
+                        {{ student.first_name }} {{ student.last_name }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Class:</strong><br>
+                        {{ student.class_obj.name }}{% if student.stream %} - {{ student.stream.name }}{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Student Type:</strong><br>
+                        <span class="badge bg-{{ 'info' if student.student_type == 'DAY' else 'warning' }}">
+                            {{ student.student_type }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Balance Summary -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Total Assessed</h4>
+                        <h2>KSh {{ "{:,.2f}".format(balance_info.total_assessed) }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-invoice fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Total Paid</h4>
+                        <h2>KSh {{ "{:,.2f}".format(balance_info.total_paid) }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-credit-card fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-{{ 'danger' if balance_info.balance > 0 else 'secondary' }}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Outstanding Balance</h4>
+                        <h2>KSh {{ "{:,.2f}".format(balance_info.balance) }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-{{ 'exclamation-triangle' if balance_info.balance > 0 else 'check-circle' }} fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if outstanding_lines %}
+<!-- Outstanding Fee Lines -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Outstanding Fee Lines
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fee Item</th>
+                                <th>Description</th>
+                                <th>Term/Year</th>
+                                <th>Assessment Date</th>
+                                <th>Assessed Amount</th>
+                                <th>Outstanding</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for line in outstanding_lines %}
+                            <tr>
+                                <td>
+                                    <strong>{{ line.fee_item }}</strong>
+                                    <br><small class="text-muted">{{ line.fee_code }}</small>
+                                </td>
+                                <td>{{ line.description }}</td>
+                                <td>
+                                    <span class="badge bg-primary">
+                                        Term {{ line.term }}/{{ line.year }}
+                                    </span>
+                                </td>
+                                <td>{{ line.assessment_date.strftime('%d %b %Y') }}</td>
+                                <td>KSh {{ "{:,.2f}".format(line.assessed_amount) }}</td>
+                                <td>
+                                    <strong class="text-danger">
+                                        KSh {{ "{:,.2f}".format(line.outstanding_amount) }}
+                                    </strong>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-warning">
+                                <th colspan="5" class="text-end">Total Outstanding:</th>
+                                <th class="text-danger">
+                                    KSh {{ "{:,.2f}".format(outstanding_lines|sum(attribute='outstanding_amount')) }}
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Balance History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Balance History by Term
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if balance_history %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Term</th>
+                                <th>Period</th>
+                                <th>Total Assessed</th>
+                                <th>Total Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for history in balance_history %}
+                            <tr>
+                                <td>
+                                    <strong>Term {{ history.term }}/{{ history.year }}</strong>
+                                </td>
+                                <td>
+                                    {% if history.term_obj %}
+                                        {{ history.term_obj.start_date.strftime('%d %b') }} - 
+                                        {{ history.term_obj.end_date.strftime('%d %b %Y') }}
+                                        {% if history.term_obj.is_current %}
+                                            <span class="badge bg-success ms-1">Current</span>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>KSh {{ "{:,.2f}".format(history.total_assessed) }}</td>
+                                <td>KSh {{ "{:,.2f}".format(history.total_paid) }}</td>
+                                <td>
+                                    <span class="text-{{ 'danger' if history.balance > 0 else 'success' }}">
+                                        KSh {{ "{:,.2f}".format(history.balance) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if history.balance == 0 %}
+                                        <span class="badge bg-success">Cleared</span>
+                                    {% elif history.balance > 0 %}
+                                        <span class="badge bg-danger">Outstanding</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Overpaid</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No balance history available</h5>
+                    <p class="text-muted">No assessments found for this student.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Add tooltips to badges
+    $('[data-bs-toggle="tooltip"]').tooltip();
+    
+    // Highlight current term row
+    $('tbody tr').each(function() {
+        if ($(this).find('.badge:contains("Current")').length > 0) {
+            $(this).addClass('table-warning');
+        }
+    });
+});
+</script>
+{% endblock %}

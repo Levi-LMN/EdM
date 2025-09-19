@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Outstanding Fees Report - School Fees Management{% endblock %}
+{% block page_title %}Outstanding Fees Report{% endblock %}
+
+{% block page_actions %}
+{% if outstanding_students %}
+<button onclick="window.print()" class="btn btn-outline-primary">
+    <i class="fas fa-print me-2"></i>Print Report
+</button>
+<button onclick="exportToCSV()" class="btn btn-outline-success">
+    <i class="fas fa-download me-2"></i>Export CSV
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="min_balance" class="form-label">Minimum Balance</label>
+                <div class="input-group">
+                    <span class="input-group-text">KSh</span>
+                    <input type="number" class="form-control" id="min_balance" name="min_balance"
+                           value="{{ filters.min_balance }}" min="0" step="0.01">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="class_id" class="form-label">Class</label>
+                <select class="form-select" id="class_id" name="class_id">
+                    <option value="">All Classes</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {% if filters.class_id == class.id %}selected{% endif %}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-search me-2"></i>Filter Results
+                    </button>
+                    <a href="{{ url_for('outstanding_fees_report') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if summary %}
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Students with Outstanding
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ summary.total_students_with_balance }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Total Outstanding
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            KSh {{ "{:,.2f}".format(summary.total_outstanding_amount) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Average Outstanding
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            KSh {{ "{:,.2f}".format(summary.average_outstanding) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calculator fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if outstanding_students %}
+<!-- Outstanding Students Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>Students with Outstanding Balances
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="outstandingTable">
+                <thead>
+                    <tr>
+                        <th>Admission No</th>
+                        <th>Student Name</th>
+                        <th>Class</th>
+                        <th>Stream</th>
+                        <th>Parent Contact</th>
+                        <th>Total Assessed</th>
+                        <th>Total Paid</th>
+                        <th>Outstanding</th>
+                        <th>Items</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in outstanding_students %}
+                    <tr>
+                        <td>{{ student.admission_no }}</td>
+                        <td>
+                            <a href="{{ url_for('view_student', student_id=student.student_id) }}">
+                                {{ student.student_name }}
+                            </a>
+                        </td>
+                        <td>{{ student.class }}</td>
+                        <td>{{ student.stream or 'N/A' }}</td>
+                        <td>{{ student.parent_contact or 'N/A' }}</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(student.total_assessed) }}</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(student.total_paid) }}</td>
+                        <td class="text-end text-danger">
+                            <strong>KSh {{ "{:,.2f}".format(student.outstanding_balance) }}</strong>
+                        </td>
+                        <td>{{ student.outstanding_lines_count }} items</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('view_student', student_id=student.student_id) }}"
+                                   class="btn btn-sm btn-outline-primary" title="View Student">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('create_payment', student_id=student.student_id) }}"
+                                   class="btn btn-sm btn-outline-success" title="Record Payment">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+    <h5>No outstanding fees</h5>
+    <p class="text-muted">All students have settled their fees based on the current filters.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportToCSV() {
+    const table = document.getElementById('outstandingTable');
+    if (!table) return alert('No data to export.');
+
+    let csv = [];
+    for (let row of table.querySelectorAll('tr')) {
+        let cols = [...row.querySelectorAll('td, th')].map(col => `"${col.innerText.trim()}"`);
+        csv.push(cols.join(','));
+    }
+
+    const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'outstanding_fees_report.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

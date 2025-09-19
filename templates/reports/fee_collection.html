@@ -1,0 +1,273 @@
+
+<!-- reports/fee_collection.html -->
+{% extends "base.html" %}
+
+{% block title %}Fee Collection Report - School Fees Management{% endblock %}
+{% block page_title %}Fee Collection Report{% endblock %}
+
+{% block page_actions %}
+{% if report_data %}
+<button onclick="window.print()" class="btn btn-outline-primary">
+    <i class="fas fa-print me-2"></i>Print Report
+</button>
+<button onclick="exportToCSV()" class="btn btn-outline-success">
+    <i class="fas fa-download me-2"></i>Export CSV
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-2">
+                <label for="year" class="form-label">Year</label>
+                <select class="form-select" id="year" name="year">
+                    <option value="">Select Year</option>
+                    {% for term in terms %}
+                        {% if not loop.index0 or terms[loop.index0-1].year != term.year %}
+                        <option value="{{ term.year }}" {{ 'selected' if filters.year == term.year }}>
+                            {{ term.year }}
+                        </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="term" class="form-label">Term</label>
+                <select class="form-select" id="term" name="term">
+                    <option value="">Select Term</option>
+                    <option value="1" {{ 'selected' if filters.term == 1 }}>Term 1</option>
+                    <option value="2" {{ 'selected' if filters.term == 2 }}>Term 2</option>
+                    <option value="3" {{ 'selected' if filters.term == 3 }}>Term 3</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="class_id" class="form-label">Class</label>
+                <select class="form-select" id="class_id" name="class_id">
+                    <option value="">All Classes</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {{ 'selected' if filters.class_id == class.id }}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-chart-bar me-2"></i>Generate Report
+                    </button>
+                    <a href="{{ url_for('fee_collection_report') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if summary %}
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Students</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ summary.total_students }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Assessed</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">KSh {{ "{:,.2f}".format(summary.total_assessed) }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Paid</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">KSh {{ "{:,.2f}".format(summary.total_paid) }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-credit-card fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col">
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-info" role="progressbar"
+                                 style="width: {{ summary.overall_collection_rate }}%"></div>
+                        </div>
+                        <small class="text-muted">{{ summary.overall_collection_rate }}% collected</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Outstanding</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">KSh {{ "{:,.2f}".format(summary.total_outstanding) }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if report_data %}
+<!-- Detailed Report -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-table me-2"></i>Collection Details
+            {% if filters.term and filters.year %}
+                - Term {{ filters.term }}/{{ filters.year }}
+            {% endif %}
+            {% if filters.class_id %}
+                - {{ classes|selectattr('id', 'equalto', filters.class_id)|first|attr('name') }}
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="reportTable">
+                <thead>
+                    <tr>
+                        <th>Admission No</th>
+                        <th>Student Name</th>
+                        <th>Class</th>
+                        <th>Stream</th>
+                        <th>Assessed</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th>Collection %</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in report_data %}
+                    <tr>
+                        <td>{{ row.admission_no }}</td>
+                        <td>
+                            <a href="{{ url_for('view_student', student_id=row.student_id) }}">
+                                {{ row.student_name }}
+                            </a>
+                        </td>
+                        <td>{{ row.class }}</td>
+                        <td>{{ row.stream or 'N/A' }}</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(row.total_assessed) }}</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(row.total_paid) }}</td>
+                        <td class="text-end text-{{ 'success' if row.balance <= 0 else 'warning' }}">
+                            KSh {{ "{:,.2f}".format(row.balance) }}
+                        </td>
+                        <td class="text-end">{{ row.collection_percentage }}%</td>
+                        <td>
+                            {% if row.balance <= 0 %}
+                                <span class="badge bg-success">Cleared</span>
+                            {% elif row.collection_percentage >= 80 %}
+                                <span class="badge bg-info">Good</span>
+                            {% elif row.collection_percentage >= 50 %}
+                                <span class="badge bg-warning">Partial</span>
+                            {% else %}
+                                <span class="badge bg-danger">Poor</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+    <h5>No Data Available</h5>
+    <p class="text-muted">Select filters above and click "Generate Report" to view collection data.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if report_data %}
+<script>
+function exportToCSV() {
+    const table = document.getElementById('reportTable');
+    const rows = Array.from(table.rows);
+
+    const csv = rows.map(row => {
+        const cols = Array.from(row.cells);
+        return cols.map(col => {
+            const text = col.textContent.trim();
+            return text.includes(',') ? `"${text}"` : text;
+        }).join(',');
+    }).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fee_collection_report.csv';
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+}
+</script>
+
+<style>
+@media print {
+    .btn, .navbar, .sidebar, .page-actions, .card-header form {
+        display: none !important;
+    }
+
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+
+    .table {
+        font-size: 12px;
+    }
+}
+</style>
+{% endif %}
+{% endblock %}
