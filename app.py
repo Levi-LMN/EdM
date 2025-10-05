@@ -5,6 +5,9 @@ from datetime import datetime, date
 from decimal import Decimal
 import os
 import secrets
+from dotenv import load_dotenv
+import os
+
 from sqlalchemy import func, desc, or_, and_
 from models import (
     db, User, UserRole, AcademicYear, Class, Stream, Vehicle, Student, StudentType,
@@ -12,6 +15,10 @@ from models import (
     PaymentMode, PaymentAllocation, StudentPromotion, PromotionStatus,
     ExpenseCategory, Expense, generate_fee_assessments, get_student_balance_summary
 )
+
+# Dynamically find and load the .env file from current project directory
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -22,6 +29,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Google OAuth configuration
 app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID')
 app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET')
+
 
 # Initialize extensions
 db.init_app(app)
