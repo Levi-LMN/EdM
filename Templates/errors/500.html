@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - EduManage Pro{% endblock %}
+
+{% block page_title %}Oops! Something went wrong{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <!-- Error Icon -->
+                <div class="mb-4">
+                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 5rem;"></i>
+                </div>
+
+                <!-- Error Message -->
+                <h1 class="display-4 text-danger">500</h1>
+                <h3 class="mb-3">Internal Server Error</h3>
+                <p class="text-muted mb-4">
+                    We're experiencing some technical difficulties. Our team has been notified and is working to resolve the issue.
+                </p>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Go to Dashboard
+                    </a>
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    </button>
+                    <button onclick="window.location.reload()" class="btn btn-outline-info">
+                        <i class="fas fa-redo me-2"></i>Refresh Page
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Troubleshooting Tips -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    What you can do
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Quick Fixes</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Refresh the page</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Try again in a few moments</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Check your internet connection</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Clear your browser cache</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-info">Need Help?</h6>
+                        <p class="text-muted">If the problem persists, please contact your system administrator with the following information:</p>
+                        <div class="alert alert-light">
+                            <small>
+                                <strong>Time:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }}<br>
+                                <strong>URL:</strong> {{ request.url }}<br>
+                                <strong>User:</strong> {{ current_user.name if current_user.is_authenticated else 'Anonymous' }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        {% if current_user.is_authenticated %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Alternative Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">While we fix this issue, you can try these alternative actions:</p>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="{{ url_for('student_list') }}" class="btn btn-outline-primary btn-sm mb-2">
+                                <i class="fas fa-user-graduate me-2"></i>View Students
+                            </a>
+                            <a href="{{ url_for('payment_list') }}" class="btn btn-outline-success btn-sm mb-2">
+                                <i class="fas fa-credit-card me-2"></i>View Payments
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="{{ url_for('fee_management') }}" class="btn btn-outline-info btn-sm mb-2">
+                                <i class="fas fa-tags me-2"></i>Manage Fees
+                            </a>
+                            <a href="{{ url_for('vehicle_list') }}" class="btn btn-outline-warning btn-sm mb-2">
+                                <i class="fas fa-bus me-2"></i>View Vehicles
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary btn-sm mb-2">
+                                <i class="fas fa-chart-line me-2"></i>View Reports
+                            </a>
+                            <a href="{{ url_for('expense_list') }}" class="btn btn-outline-dark btn-sm mb-2">
+                                <i class="fas fa-receipt me-2"></i>View Expenses
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- System Status -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-server me-2"></i>
+                    System Status
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <i class="fas fa-database text-success fa-2x mb-2"></i>
+                            <div class="fw-bold">Database</div>
+                            <small class="text-success">Operational</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <i class="fas fa-shield-alt text-success fa-2x mb-2"></i>
+                            <div class="fw-bold">Security</div>
+                            <small class="text-success">Protected</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <i class="fas fa-backup text-success fa-2x mb-2"></i>
+                            <div class="fw-bold">Backups</div>
+                            <small class="text-success">Up to date</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <i class="fas fa-cogs text-warning fa-2x mb-2"></i>
+                            <div class="fw-bold">Processing</div>
+                            <small class="text-warning">Under maintenance</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last updated: {{ moment().format('DD MMM YYYY, HH:mm') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh functionality -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div class="toast" id="autoRefreshToast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-sync-alt text-primary me-2"></i>
+            <strong class="me-auto">Auto Refresh</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+            Page will refresh automatically in <span id="countdown">30</span> seconds
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh functionality
+    let countdown = 30;
+    let refreshTimer;
+
+    function startAutoRefresh() {
+        const toast = new bootstrap.Toast(document.getElementById('autoRefreshToast'));
+        toast.show();
+
+        refreshTimer = setInterval(function() {
+            countdown--;
+            $('#countdown').text(countdown);
+
+            if (countdown <= 0) {
+                window.location.reload();
+            }
+        }, 1000);
+    }
+
+    // Start auto-refresh after 5 seconds
+    setTimeout(startAutoRefresh, 5000);
+
+    // Cancel auto-refresh if user dismisses toast
+    $('#autoRefreshToast').on('hidden.bs.toast', function() {
+        clearInterval(refreshTimer);
+    });
+
+    // Add click tracking for error analysis
+    $('a, button').on('click', function() {
+        const element = $(this);
+        const action = element.attr('href') || element.text();
+
+        // Log user action (in a real application, this would send to analytics)
+        console.log('Error page interaction:', {
+            action: action,
+            timestamp: new Date().toISOString(),
+            user: '{{ current_user.email if current_user.is_authenticated else "anonymous" }}'
+        });
+    });
+
+    // Browser notification if supported
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('EduManage Pro', {
+            body: 'We\'re experiencing technical difficulties. The page will refresh automatically.',
+            icon: '/static/favicon.png'
+        });
+    }
+
+    // Keyboard shortcuts
+    $(document).keydown(function(e) {
+        if (e.key === 'r' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            window.location.reload();
+        } else if (e.key === 'h' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            window.location.href = '{{ url_for("dashboard") }}';
+        }
+    });
+
+    // Show keyboard shortcuts hint
+    setTimeout(function() {
+        const hint = $('<div class="alert alert-light alert-dismissible fade show position-fixed" style="bottom: 100px; right: 20px; z-index: 9999; max-width: 300px;">' +
+            '<small>' +
+            '<strong>Keyboard shortcuts:</strong><br>' +
+            'Ctrl+R: Refresh page<br>' +
+            'Ctrl+H: Go to dashboard' +
+            '</small>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+            '</div>');
+        hint.appendTo('body');
+
+        setTimeout(function() {
+            hint.fadeOut();
+        }, 8000);
+    }, 3000);
+});
+</script>
+{% endblock %}

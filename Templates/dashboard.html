@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-2"></i>Add Student
+    </a>
+    <a href="{{ url_for('add_payment', student_id=0) }}" class="btn btn-outline-primary">
+        <i class="fas fa-credit-card me-2"></i>Record Payment
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h3 class="mb-0">{{ stats.total_students }}</h3>
+                <p class="text-muted mb-0">Active Students</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-school fa-3x text-success mb-3"></i>
+                <h3 class="mb-0">{{ stats.total_classes }}</h3>
+                <p class="text-muted mb-0">Classes</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-bus fa-3x text-warning mb-3"></i>
+                <h3 class="mb-0">{{ stats.total_vehicles }}</h3>
+                <p class="text-muted mb-0">Transport Vehicles</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar fa-3x text-info mb-3"></i>
+                <h3 class="mb-0">{{ stats.current_year }}</h3>
+                <p class="text-muted mb-0">Academic Year</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Payments -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Recent Payments
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Receipt No.</th>
+                                    <th>Student</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Mode</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recent_payments %}
+                                <tr>
+                                    <td>{{ payment.receipt_number }}</td>
+                                    <td>{{ payment.student.full_name }}</td>
+                                    <td>{{ payment.amount | currency }}</td>
+                                    <td>{{ payment.payment_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ payment.payment_mode.value }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('payment_list') }}" class="btn btn-outline-primary btn-sm">
+                            View All Payments
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No recent payments found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding Balances -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Top Outstanding Balances
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if students_with_balances %}
+                    {% for item in students_with_balances %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <div class="fw-bold">{{ item.student.full_name }}</div>
+                            <small class="text-muted">{{ item.student.admission_no }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="text-danger fw-bold">{{ item.balance | currency }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-end">
+                        <a href="{{ url_for('outstanding_fees_report') }}" class="btn btn-outline-danger btn-sm">
+                            View All Outstanding
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No outstanding balances</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block page_title %}Students{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-2"></i>Add Student
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Student List</h5>
+    </div>
+    <div class="card-body">
+        <!-- Search and Filters -->
+        <form method="GET" class="mb-4">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" name="search"
+                           placeholder="Search by name or admission number..."
+                           value="{{ search or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" name="class_id" onchange="loadStreams(this.value)">
+                        <option value="">All Classes</option>
+                        {% for class in classes %}
+                            <option value="{{ class.id }}"
+                                    {{ 'selected' if selected_class == class.id else '' }}>
+                                {{ class.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" name="stream_id" id="stream-select">
+                        <option value="">All Streams</option>
+                        {% for stream in streams %}
+                            <option value="{{ stream.id }}"
+                                    {{ 'selected' if selected_stream == stream.id else '' }}>
+                                {{ stream.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" name="status">
+                        <option value="">All Students</option>
+                        <option value="active" {{ 'selected' if request.args.get('status') == 'active' else '' }}>Active Only</option>
+                        <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' else '' }}>Inactive Only</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-search me-1"></i>Filter
+                        </button>
+                        <a href="{{ url_for('student_list') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Results -->
+        {% if students.items %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Admission No.</th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Parent Contact</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students.items %}
+                        <tr class="{{ 'table-secondary' if not student.is_active else '' }}">
+                            <td>{{ student.admission_no }}</td>
+                            <td>
+                                {{ student.full_name }}
+                                {% if not student.is_active %}
+                                    <i class="fas fa-user-slash text-muted ms-1" title="Inactive"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ student.class_obj.name }}
+                                {% if student.stream %}
+                                    <span class="badge bg-secondary">{{ student.stream.name }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if student.student_type.value == 'DAY' else 'primary' }}">
+                                    {{ student.student_type.value }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if student.is_active else 'secondary' }}">
+                                    {{ 'Active' if student.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div>{{ student.parent_name or '-' }}</div>
+                                <small class="text-muted">{{ student.parent_phone or '-' }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_student', student_id=student.id) }}"
+                                       class="btn btn-sm btn-outline-warning" title="Edit Student">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if student.is_active %}
+                                    <a href="{{ url_for('add_payment', student_id=student.id) }}"
+                                       class="btn btn-sm btn-outline-success" title="Add Payment">
+                                        <i class="fas fa-credit-card"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            title="Deactivate Student"
+                                            onclick="confirmDeactivate('{{ student.id }}', '{{ student.full_name }}')">
+                                        <i class="fas fa-user-slash"></i>
+                                    </button>
+                                    {% else %}
+                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                            title="Reactivate Student"
+                                            onclick="confirmReactivate('{{ student.id }}', '{{ student.full_name }}')">
+                                        <i class="fas fa-user-check"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            title="Delete Student"
+                                            onclick="confirmDelete('{{ student.id }}', '{{ student.full_name }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if students.pages > 1 %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if students.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('student_list', page=students.prev_num, search=search, class_id=selected_class, stream_id=selected_stream) }}">
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in students.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != students.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('student_list', page=page_num, search=search, class_id=selected_class, stream_id=selected_stream) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if students.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('student_list', page=students.next_num, search=search, class_id=selected_class, stream_id=selected_stream) }}">
+                                Next
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                <h4>No students found</h4>
+                <p class="text-muted">Try adjusting your search criteria or add a new student.</p>
+                <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add First Student
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete student <strong id="deleteStudentName"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    This action cannot be undone. If the student has payment or assessment records, consider deactivating instead of deleting.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Student</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Confirmation Modal -->
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deactivateModalLabel">Confirm Deactivation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to deactivate student <strong id="deactivateStudentName"></strong>?</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Deactivated students will be hidden from most lists but their records will be preserved. You can reactivate them later if needed.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deactivateForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-warning">Deactivate Student</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reactivate Confirmation Modal -->
+<div class="modal fade" id="reactivateModal" tabindex="-1" aria-labelledby="reactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reactivateModalLabel">Confirm Reactivation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reactivate student <strong id="reactivateStudentName"></strong>?</p>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    The student will be restored to active status and will appear in regular lists and reports.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="reactivateForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-success">Reactivate Student</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadStreams(classId) {
+    const streamSelect = document.getElementById('stream-select');
+    streamSelect.innerHTML = '<option value="">All Streams</option>';
+
+    if (classId) {
+        fetch(`/api/streams/${classId}`)
+            .then(response => response.json())
+            .then(streams => {
+                streams.forEach(stream => {
+                    const option = document.createElement('option');
+                    option.value = stream.id;
+                    option.textContent = stream.name;
+                    streamSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading streams:', error);
+            });
+    }
+}
+
+function confirmDelete(studentId, studentName) {
+    document.getElementById('deleteStudentName').textContent = studentName;
+    document.getElementById('deleteForm').action = `/students/delete/${studentId}`;
+
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+function confirmDeactivate(studentId, studentName) {
+    document.getElementById('deactivateStudentName').textContent = studentName;
+    document.getElementById('deactivateForm').action = `/students/deactivate/${studentId}`;
+
+    const modal = new bootstrap.Modal(document.getElementById('deactivateModal'));
+    modal.show();
+}
+
+function confirmReactivate(studentId, studentName) {
+    document.getElementById('reactivateStudentName').textContent = studentName;
+    document.getElementById('reactivateForm').action = `/students/reactivate/${studentId}`;
+
+    const modal = new bootstrap.Modal(document.getElementById('reactivateModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

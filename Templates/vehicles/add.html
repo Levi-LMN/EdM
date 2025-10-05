@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Add Vehicle - EduManage Pro{% endblock %}
+{% block page_title %}Add New Vehicle{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('vehicle_list') }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Vehicles
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Vehicle Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="registration_number" class="form-label">
+                                    <i class="fas fa-id-card me-2"></i>Registration Number *
+                                </label>
+                                <input type="text" class="form-control" id="registration_number"
+                                       name="registration_number" required
+                                       placeholder="e.g. KCA 123A">
+                                <div class="invalid-feedback">
+                                    Please provide a valid registration number.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="capacity" class="form-label">
+                                    <i class="fas fa-users me-2"></i>Passenger Capacity
+                                </label>
+                                <input type="number" class="form-control" id="capacity"
+                                       name="capacity" min="1" max="100"
+                                       placeholder="e.g. 40">
+                                <div class="form-text">Maximum number of students this vehicle can carry</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="make" class="form-label">
+                                    <i class="fas fa-car me-2"></i>Make
+                                </label>
+                                <input type="text" class="form-control" id="make" name="make"
+                                       placeholder="e.g. Toyota, Nissan, Isuzu">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="model" class="form-label">
+                                    <i class="fas fa-cog me-2"></i>Model
+                                </label>
+                                <input type="text" class="form-control" id="model" name="model"
+                                       placeholder="e.g. Hiace, Coaster">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-user-tie me-2"></i>Driver Information
+                    </h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="driver_name" class="form-label">
+                                    <i class="fas fa-user me-2"></i>Driver Name
+                                </label>
+                                <input type="text" class="form-control" id="driver_name" name="driver_name"
+                                       placeholder="Enter driver's full name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="driver_phone" class="form-label">
+                                    <i class="fas fa-phone me-2"></i>Driver Phone
+                                </label>
+                                <input type="tel" class="form-control" id="driver_phone" name="driver_phone"
+                                       placeholder="e.g. +254712345678">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="route_description" class="form-label">
+                            <i class="fas fa-route me-2"></i>Route Description
+                        </label>
+                        <textarea class="form-control" id="route_description" name="route_description"
+                                  rows="3" placeholder="Describe the main route this vehicle covers..."></textarea>
+                        <div class="form-text">Optional: Describe areas/estates this vehicle serves</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('vehicle_list') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Add Vehicle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Guidelines
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6 class="text-primary">Registration Number</h6>
+                <p class="small mb-3">Must be unique. Use the format as shown on the vehicle's license plate.</p>
+
+                <h6 class="text-primary">Capacity</h6>
+                <p class="small mb-3">Enter the maximum number of students this vehicle can safely transport.</p>
+
+                <h6 class="text-primary">Driver Information</h6>
+                <p class="small mb-3">Driver details are optional but recommended for better coordination.</p>
+
+                <h6 class="text-primary">Route Description</h6>
+                <p class="small mb-0">Helps with assigning students and planning routes effectively.</p>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Quick Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Double-check registration number accuracy
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Set realistic capacity limits
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Keep driver contact updated
+                    </li>
+                    <li class="mb-0">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Use clear route descriptions
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Form validation
+    const form = $('form');
+
+    form.on('submit', function(e) {
+        let isValid = true;
+
+        // Reset validation
+        $('.form-control').removeClass('is-invalid is-valid');
+
+        // Required field validation
+        const registrationNumber = $('#registration_number').val().trim();
+        if (!registrationNumber) {
+            $('#registration_number').addClass('is-invalid');
+            isValid = false;
+        } else {
+            $('#registration_number').addClass('is-valid');
+        }
+
+        // Registration number format validation (basic)
+        const regPattern = /^[A-Z]{3}\s?\d{3}[A-Z]$/;
+        if (registrationNumber && !regPattern.test(registrationNumber.toUpperCase())) {
+            $('#registration_number').addClass('is-invalid');
+            $('#registration_number').siblings('.invalid-feedback')
+                .text('Please use format like "KCA 123A"');
+            isValid = false;
+        }
+
+        // Capacity validation
+        const capacity = parseInt($('#capacity').val());
+        if (capacity && (capacity < 1 || capacity > 100)) {
+            $('#capacity').addClass('is-invalid');
+            isValid = false;
+        } else if (capacity) {
+            $('#capacity').addClass('is-valid');
+        }
+
+        // Phone number validation (basic)
+        const phone = $('#driver_phone').val().trim();
+        if (phone) {
+            const phonePattern = /^[\+]?[0-9\s\-\(\)]{10,15}$/;
+            if (!phonePattern.test(phone)) {
+                $('#driver_phone').addClass('is-invalid');
+                isValid = false;
+            } else {
+                $('#driver_phone').addClass('is-valid');
+            }
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            $('html, body').animate({
+                scrollTop: $('.is-invalid').first().offset().top - 100
+            }, 500);
+        }
+    });
+
+    // Real-time validation
+    $('#registration_number').on('blur', function() {
+        const value = $(this).val().trim().toUpperCase();
+        $(this).val(value); // Convert to uppercase
+
+        if (value) {
+            const regPattern = /^[A-Z]{3}\s?\d{3}[A-Z]$/;
+            if (regPattern.test(value)) {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } else {
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            }
+        }
+    });
+
+    // Phone number formatting
+    $('#driver_phone').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.startsWith('254')) {
+            value = '+' + value;
+        } else if (value.startsWith('0') && value.length === 10) {
+            value = '+254' + value.substring(1);
+        }
+        $(this).val(value);
+    });
+
+    // Auto-format registration number
+    $('#registration_number').on('input', function() {
+        let value = $(this).val().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (value.length >= 6) {
+            value = value.substring(0, 3) + ' ' + value.substring(3, 6) + value.substring(6, 7);
+        }
+        $(this).val(value);
+    });
+});
+</script>
+{% endblock %}

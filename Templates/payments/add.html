@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Record Payment - EduManage Pro{% endblock %}
+{% block page_title %}Record Payment{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Student
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Student Info Card -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Student Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Admission No:</dt>
+                    <dd class="col-sm-7">{{ student.admission_no }}</dd>
+
+                    <dt class="col-sm-5">Name:</dt>
+                    <dd class="col-sm-7">{{ student.full_name }}</dd>
+
+                    <dt class="col-sm-5">Class:</dt>
+                    <dd class="col-sm-7">
+                        {{ student.class_obj.name }}
+                        {% if student.stream %}
+                            -{{ student.stream.name }}
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Type:</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-info">{{ student.student_type.value }}</span>
+                    </dd>
+
+                    <dt class="col-sm-5">Parent:</dt>
+                    <dd class="col-sm-7">
+                        {{ student.parent_name }}<br>
+                        <small class="text-muted">{{ student.parent_phone }}</small>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Outstanding Fees Summary -->
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>Outstanding Fees
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if outstanding_assessments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fee Item</th>
+                                    <th>Term</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in outstanding_assessments %}
+                                <tr>
+                                    <td>{{ item.assessment.fee_item.name }}</td>
+                                    <td>T{{ item.assessment.term }}/{{ item.assessment.year }}</td>
+                                    <td class="text-end text-danger">
+                                        <strong>{{ item.outstanding|currency }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-active">
+                                    <th colspan="2">Total Outstanding</th>
+                                    <th class="text-end text-danger">
+                                        <strong>{{ outstanding_assessments|sum(attribute='outstanding')|currency }}</strong>
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        No outstanding fees
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>Payment Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="amount" class="form-label">Amount *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">KSh</span>
+                                    <input type="number" class="form-control" id="amount" name="amount"
+                                           step="0.01" min="0.01" required
+                                           placeholder="0.00">
+                                </div>
+                                {% if outstanding_assessments %}
+                                <small class="text-muted">
+                                    Outstanding: {{ outstanding_assessments|sum(attribute='outstanding')|currency }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+    <div class="form-group mb-3">
+        <label for="payment_date" class="form-label">Payment Date *</label>
+        <input type="date" class="form-control" id="payment_date" name="payment_date"
+               value="{{ today_date }}" required>
+    </div>
+</div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="payment_mode" class="form-label">Payment Mode *</label>
+                        <select class="form-select" id="payment_mode" name="payment_mode" required
+                                onchange="togglePaymentFields()">
+                            <option value="">Select Payment Mode</option>
+                            <option value="CASH">Cash</option>
+                            <option value="MPESA">M-Pesa</option>
+                            <option value="BANK">Bank Transfer</option>
+                            <option value="CHEQUE">Cheque</option>
+                        </select>
+                    </div>
+
+                    <!-- M-Pesa Code Field -->
+                    <div id="mpesa_field" class="form-group mb-3" style="display: none;">
+                        <label for="mpesa_code" class="form-label">M-Pesa Transaction Code</label>
+                        <input type="text" class="form-control" id="mpesa_code" name="mpesa_code"
+                               placeholder="e.g., QGH7KL2M3X">
+                        <small class="text-muted">Enter the M-Pesa confirmation code</small>
+                    </div>
+
+                    <!-- Bank Slip Field -->
+                    <div id="bank_field" class="form-group mb-3" style="display: none;">
+                        <label for="bank_slip_number" class="form-label">Bank Slip Number</label>
+                        <input type="text" class="form-control" id="bank_slip_number" name="bank_slip_number"
+                               placeholder="Enter bank slip/reference number">
+                    </div>
+
+                    <!-- Cheque Field -->
+                    <div id="cheque_field" class="form-group mb-3" style="display: none;">
+                        <label for="cheque_number" class="form-label">Cheque Number</label>
+                        <input type="text" class="form-control" id="cheque_number" name="cheque_number"
+                               placeholder="Enter cheque number">
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                                  placeholder="Additional notes or comments..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>What happens next?</h6>
+                        <p class="mb-0">
+                            After recording this payment, you'll be redirected to allocate the payment
+                            to specific fee assessments. The payment will be saved and you can allocate
+                            it to one or more outstanding fees.
+                        </p>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                           class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Record Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Payment Guide -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Payment Guide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Payment Modes:</h6>
+                        <ul class="small mb-0">
+                            <li><strong>Cash:</strong> Direct cash payment</li>
+                            <li><strong>M-Pesa:</strong> Mobile money transfer (provide transaction code)</li>
+                            <li><strong>Bank:</strong> Bank transfer or deposit (provide slip number)</li>
+                            <li><strong>Cheque:</strong> Cheque payment (provide cheque number)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Important:</h6>
+                        <ul class="small mb-0">
+                            <li>Receipt will be generated automatically</li>
+                            <li>Payment date can be backdated if needed</li>
+                            <li>You can allocate payment to multiple fees</li>
+                            <li>Partial payments are allowed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePaymentFields() {
+    const paymentMode = document.getElementById('payment_mode').value;
+
+    // Hide all payment-specific fields
+    document.getElementById('mpesa_field').style.display = 'none';
+    document.getElementById('bank_field').style.display = 'none';
+    document.getElementById('cheque_field').style.display = 'none';
+
+    // Clear all values
+    document.getElementById('mpesa_code').value = '';
+    document.getElementById('bank_slip_number').value = '';
+    document.getElementById('cheque_number').value = '';
+
+    // Show relevant field based on payment mode
+    if (paymentMode === 'MPESA') {
+        document.getElementById('mpesa_field').style.display = 'block';
+    } else if (paymentMode === 'BANK') {
+        document.getElementById('bank_field').style.display = 'block';
+    } else if (paymentMode === 'CHEQUE') {
+        document.getElementById('cheque_field').style.display = 'block';
+    }
+}
+
+// Quick fill amount with total outstanding
+{% if outstanding_assessments %}
+document.addEventListener('DOMContentLoaded', function() {
+    const totalOutstanding = {{ outstanding_assessments|sum(attribute='outstanding') }};
+    const amountInput = document.getElementById('amount');
+
+    // Add a button to quickly fill total outstanding
+    const quickFillBtn = document.createElement('button');
+    quickFillBtn.type = 'button';
+    quickFillBtn.className = 'btn btn-sm btn-outline-secondary mt-1';
+    quickFillBtn.innerHTML = '<i class="fas fa-bolt me-1"></i>Fill Total Outstanding';
+    quickFillBtn.onclick = function() {
+        amountInput.value = totalOutstanding.toFixed(2);
+    };
+
+    amountInput.parentElement.parentElement.appendChild(quickFillBtn);
+});
+{% endif %}
+</script>
+{% endblock %}

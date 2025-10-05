@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Add Fee Rate - EduManage Pro{% endblock %}
+
+{% block page_title %}Add Fee Rate{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('fee_management') }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Fee Management
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Info Alert -->
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Fee Rates:</strong> Define how much a fee costs for a specific term, year, and optionally for specific classes, streams, or student types.
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Fee Rate
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="feeRateForm">
+                    <!-- Fee Item Selection -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fee_item_id" class="form-label">
+                                Fee Item <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="fee_item_id" name="fee_item_id" required>
+                                <option value="">-- Select Fee Item --</option>
+                                {% for item in fee_items %}
+                                    <option value="{{ item.id }}"
+                                            data-scope="{{ item.scope.value }}"
+                                            data-perkm="{{ item.is_per_km }}">
+                                        {{ item.name }} ({{ item.code }})
+                                        {% if item.is_per_km %} - Per KM{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="term" class="form-label">
+                                Term <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="term" name="term" required>
+                                <option value="1">Term 1</option>
+                                <option value="2">Term 2</option>
+                                <option value="3">Term 3</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="year" class="form-label">
+                                Academic Year <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="year" name="year"
+                                   value="{{ current_year.year if current_year else 2025 }}"
+                                   min="2020" max="2030" required>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Scope Section -->
+                    <div id="scopeSection">
+                        <h6 class="mb-3">
+                            <i class="fas fa-bullseye me-2"></i>Rate Applicability
+                        </h6>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="class_id" class="form-label">Class (Optional)</label>
+                                <select class="form-select" id="class_id" name="class_id">
+                                    <option value="">All Classes</option>
+                                    {% for cls in classes %}
+                                        <option value="{{ cls.id }}">{{ cls.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">
+                                    Leave empty for universal application
+                                </small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="stream_id" class="form-label">Stream (Optional)</label>
+                                <select class="form-select" id="stream_id" name="stream_id" disabled>
+                                    <option value="">Select class first</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    Select class to enable
+                                </small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="student_type" class="form-label">Student Type (Optional)</label>
+                                <select class="form-select" id="student_type" name="student_type">
+                                    <option value="">All Student Types</option>
+                                    <option value="DAY">Day Scholar</option>
+                                    <option value="BOARDER">Boarder</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    For different rates per type
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning" id="scopeWarning" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <span id="scopeWarningText"></span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Rate Amount Section -->
+                    <h6 class="mb-3">
+                        <i class="fas fa-dollar-sign me-2"></i>Rate Amount
+                    </h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3" id="fixedAmountField">
+                            <label for="amount" class="form-label">
+                                Fixed Amount (KSh) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">KSh</span>
+                                <input type="number" class="form-control" id="amount" name="amount"
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <small class="form-text text-muted">
+                                Total amount for this fee
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-3" id="perKmRateField" style="display: none;">
+                            <label for="rate_per_km" class="form-label">
+                                Rate Per Kilometer (KSh) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">KSh</span>
+                                <input type="number" class="form-control" id="rate_per_km" name="rate_per_km"
+                                       step="0.01" min="0" placeholder="0.00">
+                                <span class="input-group-text">/km</span>
+                            </div>
+                            <small class="form-text text-muted">
+                                Amount charged per kilometer
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="card bg-light mt-4" id="previewCard" style="display: none;">
+                        <div class="card-body">
+                            <h6 class="mb-3">
+                                <i class="fas fa-eye me-2"></i>Rate Preview
+                            </h6>
+                            <div id="previewContent"></div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                Active (available for use immediately)
+                            </label>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('fee_management') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Fee Rate
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fee item selection handler
+    document.getElementById('fee_item_id').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const isPerKm = selectedOption.dataset.perkm === 'True';
+        const scope = selectedOption.dataset.scope;
+
+        // Show/hide appropriate fields
+        const fixedAmountField = document.getElementById('fixedAmountField');
+        const perKmRateField = document.getElementById('perKmRateField');
+        const amountInput = document.getElementById('amount');
+        const ratePerKmInput = document.getElementById('rate_per_km');
+
+        if (isPerKm) {
+            fixedAmountField.style.display = 'none';
+            perKmRateField.style.display = 'block';
+            amountInput.required = false;
+            amountInput.value = '';
+            ratePerKmInput.required = true;
+        } else {
+            fixedAmountField.style.display = 'block';
+            perKmRateField.style.display = 'none';
+            amountInput.required = true;
+            ratePerKmInput.required = false;
+            ratePerKmInput.value = '';
+        }
+
+        // Update scope warning
+        updateScopeWarning(scope);
+        updatePreview();
+    });
+
+    // Class selection handler - load streams
+    document.getElementById('class_id').addEventListener('change', function() {
+        const classId = this.value;
+        const streamSelect = document.getElementById('stream_id');
+
+        if (classId) {
+            fetch(`/api/streams/${classId}`)
+                .then(response => response.json())
+                .then(streams => {
+                    streamSelect.innerHTML = '<option value="">All Streams</option>';
+                    streams.forEach(stream => {
+                        streamSelect.innerHTML += `<option value="${stream.id}">${stream.name}</option>`;
+                    });
+                    streamSelect.disabled = false;
+                });
+        } else {
+            streamSelect.innerHTML = '<option value="">Select class first</option>';
+            streamSelect.disabled = true;
+            streamSelect.value = '';
+        }
+        updatePreview();
+    });
+
+    // Update scope warning based on fee item scope
+    function updateScopeWarning(scope) {
+        const scopeWarning = document.getElementById('scopeWarning');
+        const scopeWarningText = document.getElementById('scopeWarningText');
+
+        if (scope === 'UNIVERSAL') {
+            scopeWarningText.textContent = 'This is a UNIVERSAL fee - it will apply to all students. Class and stream selections will be ignored.';
+            scopeWarning.style.display = 'block';
+        } else if (scope === 'CLASS_LEVEL') {
+            scopeWarningText.textContent = 'This is a CLASS-LEVEL fee - select a class. Stream selection will be ignored.';
+            scopeWarning.style.display = 'block';
+        } else if (scope === 'STREAM_LEVEL') {
+            scopeWarningText.textContent = 'This is a STREAM-LEVEL fee - select both class and stream for specific application.';
+            scopeWarning.style.display = 'block';
+        } else {
+            scopeWarning.style.display = 'none';
+        }
+    }
+
+    // Update preview
+    function updatePreview() {
+        const feeItemSelect = document.getElementById('fee_item_id');
+        const termSelect = document.getElementById('term');
+        const yearInput = document.getElementById('year');
+        const classSelect = document.getElementById('class_id');
+        const streamSelect = document.getElementById('stream_id');
+        const studentTypeSelect = document.getElementById('student_type');
+        const amountInput = document.getElementById('amount');
+        const ratePerKmInput = document.getElementById('rate_per_km');
+
+        if (!feeItemSelect.value) {
+            document.getElementById('previewCard').style.display = 'none';
+            return;
+        }
+
+        const selectedOption = feeItemSelect.options[feeItemSelect.selectedIndex];
+        const isPerKm = selectedOption.dataset.perkm === 'True';
+
+        let previewHTML = '<dl class="row mb-0">';
+        previewHTML += `<dt class="col-sm-4">Fee Item:</dt><dd class="col-sm-8">${selectedOption.text}</dd>`;
+        previewHTML += `<dt class="col-sm-4">Period:</dt><dd class="col-sm-8">Term ${termSelect.value}/${yearInput.value}</dd>`;
+
+        if (classSelect.value) {
+            const className = classSelect.options[classSelect.selectedIndex].text;
+            previewHTML += `<dt class="col-sm-4">Class:</dt><dd class="col-sm-8">${className}</dd>`;
+        }
+
+        if (streamSelect.value) {
+            const streamName = streamSelect.options[streamSelect.selectedIndex].text;
+            previewHTML += `<dt class="col-sm-4">Stream:</dt><dd class="col-sm-8">${streamName}</dd>`;
+        }
+
+        if (studentTypeSelect.value) {
+            const typeName = studentTypeSelect.options[studentTypeSelect.selectedIndex].text;
+            previewHTML += `<dt class="col-sm-4">Student Type:</dt><dd class="col-sm-8">${typeName}</dd>`;
+        }
+
+        if (isPerKm && ratePerKmInput.value) {
+            previewHTML += `<dt class="col-sm-4">Rate:</dt><dd class="col-sm-8">KSh ${parseFloat(ratePerKmInput.value).toFixed(2)} per km</dd>`;
+            previewHTML += `<dt class="col-sm-4">Example (10 km):</dt><dd class="col-sm-8">KSh ${(parseFloat(ratePerKmInput.value) * 10).toFixed(2)}</dd>`;
+        } else if (amountInput.value) {
+            previewHTML += `<dt class="col-sm-4">Amount:</dt><dd class="col-sm-8"><strong>KSh ${parseFloat(amountInput.value).toFixed(2)}</strong></dd>`;
+        }
+
+        previewHTML += '</dl>';
+
+        document.getElementById('previewContent').innerHTML = previewHTML;
+        document.getElementById('previewCard').style.display = 'block';
+    }
+
+    // Add event listeners for preview updates
+    ['term', 'year', 'stream_id', 'student_type', 'amount', 'rate_per_km'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updatePreview);
+        document.getElementById(id).addEventListener('input', updatePreview);
+    });
+
+    // Form validation
+    document.getElementById('feeRateForm').addEventListener('submit', function(e) {
+        const amountInput = document.getElementById('amount');
+        const ratePerKmInput = document.getElementById('rate_per_km');
+
+        if (!amountInput.value && !ratePerKmInput.value) {
+            e.preventDefault();
+            alert('Please enter either a fixed amount or a rate per kilometer.');
+            return false;
+        }
+    });
+</script>
+{% endblock %}

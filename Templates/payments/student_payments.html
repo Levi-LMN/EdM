@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Student Payments - {{ student.full_name }}{% endblock %}
+{% block page_title %}Payment History{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Student
+</a>
+<a href="{{ url_for('add_payment', student_id=student.id) }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Record Payment
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Student Info Card -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-graduate me-2"></i>Student Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="avatar-circle bg-primary text-white mx-auto mb-2" style="width: 80px; height: 80px; line-height: 80px; border-radius: 50%; font-size: 2rem;">
+                        {{ student.first_name[0] }}{{ student.last_name[0] }}
+                    </div>
+                    <h5 class="mb-0">{{ student.full_name }}</h5>
+                    <p class="text-muted mb-0">{{ student.admission_no }}</p>
+                </div>
+                <hr>
+                <div class="mb-2">
+                    <small class="text-muted">Class</small>
+                    <div>
+                        <span class="badge bg-info">
+                            {{ student.class_obj.name }}{% if student.stream %}-{{ student.stream.name }}{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Student Type</small>
+                    <div>
+                        <span class="badge bg-secondary">{{ student.student_type.value }}</span>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Parent/Guardian</small>
+                    <div>{{ student.parent_name or '-' }}</div>
+                    <small>{{ student.parent_phone or '' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Summary Card -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>Balance Summary
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Total Assessed</small>
+                    <div class="h5 text-primary">{{ balance_summary.total_assessed|currency }}</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Total Paid</small>
+                    <div class="h5 text-success">{{ balance_summary.total_payments|currency }}</div>
+                </div>
+                <hr>
+                <div>
+                    <small class="text-muted">Outstanding Balance</small>
+                    <div class="h4 {% if balance_summary.overall_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ balance_summary.overall_balance|currency }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments List -->
+    <div class="col-md-8">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-receipt fa-2x text-primary mb-2"></i>
+                        <h4 class="mb-0">{{ payments|length }}</h4>
+                        <small class="text-muted">Total Payments</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-coins fa-2x text-success mb-2"></i>
+                        <h4 class="mb-0">
+                            {% set total = payments|sum(attribute='amount') %}
+                            {{ total|currency }}
+                        </h4>
+                        <small class="text-muted">Total Amount</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-calendar-check fa-2x text-info mb-2"></i>
+                        <h4 class="mb-0">
+                            {% if payments %}
+                            {{ payments[0].payment_date.strftime('%d %b %Y') }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </h4>
+                        <small class="text-muted">Last Payment</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Payment History
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Receipt No.</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Mode</th>
+                                <th>Reference</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>
+                                    <strong>{{ payment.receipt_number }}</strong>
+                                </td>
+                                <td>
+                                    <small>{{ payment.payment_date.strftime('%d %b %Y') }}</small>
+                                </td>
+                                <td>
+                                    <strong class="text-success">{{ payment.amount|currency }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge
+                                        {% if payment.payment_mode.value == 'CASH' %}bg-success
+                                        {% elif payment.payment_mode.value == 'MPESA' %}bg-primary
+                                        {% elif payment.payment_mode.value == 'BANK' %}bg-info
+                                        {% else %}bg-warning{% endif %}">
+                                        {{ payment.payment_mode.value }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {% if payment.payment_mode.value == 'MPESA' and payment.mpesa_code %}
+                                        {{ payment.mpesa_code }}
+                                        {% elif payment.payment_mode.value == 'BANK' and payment.bank_slip_number %}
+                                        {{ payment.bank_slip_number }}
+                                        {% elif payment.payment_mode.value == 'CHEQUE' and payment.cheque_number %}
+                                        {{ payment.cheque_number }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if payment.allocations %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle"></i> Allocated
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('payment_detail', payment_id=payment.id) }}"
+                                           class="btn btn-outline-primary"
+                                           title="View Receipt">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if not payment.allocations %}
+                                        <a href="{{ url_for('allocate_payment', payment_id=payment.id) }}"
+                                           class="btn btn-outline-warning"
+                                           title="Allocate">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                                <td colspan="5">
+                                    <strong class="text-success">{{ total|currency }}</strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No payments recorded yet</p>
+                    <a href="{{ url_for('add_payment', student_id=student.id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Record First Payment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Allocation Breakdown -->
+        {% if payments and payments|selectattr('allocations')|list %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Payment Allocations
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Receipt</th>
+                                <th>Fee Item</th>
+                                <th>Term/Year</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                {% for allocation in payment.allocations %}
+                                <tr>
+                                    <td><small>{{ payment.receipt_number }}</small></td>
+                                    <td>{{ allocation.assessment.fee_item.name }}</td>
+                                    <td><small>T{{ allocation.assessment.term }}/{{ allocation.assessment.year }}</small></td>
+                                    <td>{{ allocation.amount|currency }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .btn-group-sm > .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}

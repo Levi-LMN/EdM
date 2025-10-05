@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.full_name }} - EduManage Pro{% endblock %}
+{% block page_title %}Student Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('student_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-outline-primary">
+        <i class="fas fa-edit me-2"></i>Edit
+    </a>
+    <a href="{{ url_for('add_payment', student_id=student.id) }}" class="btn btn-primary">
+        <i class="fas fa-money-bill-wave me-2"></i>Record Payment
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Student Information Card -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Student Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Admission No:</dt>
+                    <dd class="col-sm-7"><strong>{{ student.admission_no }}</strong></dd>
+
+                    <dt class="col-sm-5">Full Name:</dt>
+                    <dd class="col-sm-7">{{ student.full_name }}</dd>
+
+                    <dt class="col-sm-5">Date of Birth:</dt>
+                    <dd class="col-sm-7">
+                        {% if student.date_of_birth %}
+                            {{ student.date_of_birth.strftime('%d %b %Y') }}
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Class:</dt>
+                    <dd class="col-sm-7">
+                        {{ student.class_obj.name }}
+                        {% if student.stream %}
+                            -{{ student.stream.name }}
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Student Type:</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {% if student.student_type.value == 'BOARDER' %}bg-primary{% else %}bg-info{% endif %}">
+                            {{ student.student_type.value }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-5">Status:</dt>
+                    <dd class="col-sm-7">
+                        {% if student.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Admission Date:</dt>
+                    <dd class="col-sm-7">
+                        {% if student.admission_date %}
+                            {{ student.admission_date.strftime('%d %b %Y') }}
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Parent/Guardian Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>Parent/Guardian
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Name:</dt>
+                    <dd class="col-sm-7">{{ student.parent_name or 'Not set' }}</dd>
+
+                    <dt class="col-sm-5">Phone:</dt>
+                    <dd class="col-sm-7">
+                        {% if student.parent_phone %}
+                            <a href="tel:{{ student.parent_phone }}">{{ student.parent_phone }}</a>
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Email:</dt>
+                    <dd class="col-sm-7">
+                        {% if student.parent_email %}
+                            <a href="mailto:{{ student.parent_email }}">{{ student.parent_email }}</a>
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Transport Information -->
+        {% if student.vehicle_id %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bus me-2"></i>Transport
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Vehicle:</dt>
+                    <dd class="col-sm-7">
+                        <a href="{{ url_for('vehicle_detail', vehicle_id=student.vehicle.id) }}">
+                            {{ student.vehicle.registration_number }}
+                        </a>
+                    </dd>
+
+                    <dt class="col-sm-5">Route:</dt>
+                    <dd class="col-sm-7">{{ student.vehicle.route_description or 'Not specified' }}</dd>
+
+                    <dt class="col-sm-5">Distance:</dt>
+                    <dd class="col-sm-7">
+                        {% if student.transport_distance_km %}
+                            {{ student.transport_distance_km }} km
+                        {% else %}
+                            <span class="text-muted">Not set</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Driver:</dt>
+                    <dd class="col-sm-7">
+                        {{ student.vehicle.driver_name or 'Not specified' }}<br>
+                        {% if student.vehicle.driver_phone %}
+                            <small><a href="tel:{{ student.vehicle.driver_phone }}">{{ student.vehicle.driver_phone }}</a></small>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('add_payment', student_id=student.id) }}" class="btn btn-success">
+                        <i class="fas fa-money-bill-wave me-2"></i>Record Payment
+                    </a>
+                    <a href="{{ url_for('individual_fee_assignment', student_id=student.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-tags me-2"></i>Assign Custom Fee
+                    </a>
+                    <a href="{{ url_for('individual_promotion', student_id=student.id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-graduation-cap me-2"></i>Promote Student
+                    </a>
+                    <a href="{{ url_for('student_statement', student_id=student.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-file-invoice me-2"></i>View Statement
+                    </a>
+                    {% if student.is_active %}
+                    <form method="POST" action="{{ url_for('deactivate_student', student_id=student.id) }}"
+                          onsubmit="return confirm('Deactivate this student?')">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-user-slash me-2"></i>Deactivate
+                        </button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('reactivate_student', student_id=student.id) }}"
+                          onsubmit="return confirm('Reactivate this student?')">
+                        <button type="submit" class="btn btn-outline-success w-100">
+                            <i class="fas fa-user-check me-2"></i>Reactivate
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="col-md-8">
+        <!-- Financial Summary -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Financial Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 mb-3">
+                            <h6 class="text-muted mb-2">Total Assessed</h6>
+                            <h3 class="text-primary mb-0">
+                                {{ balance_summary.total_assessed|currency }}
+                            </h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 mb-3">
+                            <h6 class="text-muted mb-2">Total Paid</h6>
+                            <h3 class="text-success mb-0">
+                                {{ balance_summary.total_payments|currency }}
+                            </h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 mb-3">
+                            <h6 class="text-muted mb-2">Balance</h6>
+                            <h3 class="{% if balance_summary.overall_balance > 0 %}text-danger{% else %}text-success{% endif %} mb-0">
+                                {{ balance_summary.overall_balance|currency }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                {% if balance_summary.term_balances %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Term</th>
+                                <th class="text-end">Assessed</th>
+                                <th class="text-end">Paid</th>
+                                <th class="text-end">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for term_balance in balance_summary.term_balances %}
+                            <tr>
+                                <td>Term {{ term_balance.term }}/{{ term_balance.year }}</td>
+                                <td class="text-end">{{ term_balance.assessed|currency }}</td>
+                                <td class="text-end">{{ term_balance.paid|currency }}</td>
+                                <td class="text-end {% if term_balance.balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ term_balance.balance|currency }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Current Term Assessments -->
+        {% if current_assessments %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Current Term Fee Assessments
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fee Item</th>
+                                <th>Term/Year</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-end">Paid</th>
+                                <th class="text-end">Balance</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assessment in current_assessments %}
+                            {% set paid_amount = assessment.allocations|sum(attribute='amount') %}
+                            {% set balance = assessment.amount - paid_amount %}
+                            <tr>
+                                <td>
+                                    <strong>{{ assessment.fee_item.name }}</strong><br>
+                                    <small class="text-muted">{{ assessment.description }}</small>
+                                </td>
+                                <td>T{{ assessment.term }}/{{ assessment.year }}</td>
+                                <td class="text-end">{{ assessment.amount|currency }}</td>
+                                <td class="text-end text-success">{{ paid_amount|currency }}</td>
+                                <td class="text-end {% if balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    <strong>{{ balance|currency }}</strong>
+                                </td>
+                                <td>{{ assessment.assessed_date.strftime('%d %b %Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Payments -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-receipt me-2"></i>Recent Payments
+                </h5>
+                <a href="{{ url_for('student_payments', student_id=student.id) }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Receipt No</th>
+                                    <th>Date</th>
+                                    <th>Mode</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recent_payments %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('payment_detail', payment_id=payment.id) }}">
+                                            {{ payment.receipt_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ payment.payment_date.strftime('%d %b %Y') }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ payment.payment_mode.value }}</span>
+                                        {% if payment.mpesa_code %}
+                                            <br><small class="text-muted">{{ payment.mpesa_code }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>{{ payment.amount|currency }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('payment_detail', payment_id=payment.id) }}"
+                                               class="btn btn-outline-primary" title="View Receipt">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('edit_payment', payment_id=payment.id) }}"
+                                               class="btn btn-outline-secondary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No payments recorded yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Individual Fee Assignments -->
+        {% set individual_assignments = student.fee_assignments|selectattr('is_active', 'equalto', True)|list %}
+        {% if individual_assignments %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tags me-2"></i>Individual Fee Assignments
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fee Item</th>
+                                <th>Term/Year</th>
+                                <th>Custom Rate</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in individual_assignments %}
+                            <tr>
+                                <td>{{ assignment.fee_item.name }}</td>
+                                <td>T{{ assignment.term }}/{{ assignment.year }}</td>
+                                <td>
+                                    {% if assignment.custom_amount %}
+                                        {{ assignment.custom_amount|currency }}
+                                    {% elif assignment.custom_rate_per_km %}
+                                        {{ assignment.custom_rate_per_km|currency }}/km
+                                        {% if assignment.custom_distance %}
+                                            ({{ assignment.custom_distance }} km)
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ assignment.notes or '-' }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('edit_student_assignment', assignment_id=assignment.id) }}"
+                                           class="btn btn-outline-primary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('delete_student_assignment', assignment_id=assignment.id) }}"
+                                              class="d-inline" onsubmit="return confirm('Delete this assignment?')">
+                                            <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

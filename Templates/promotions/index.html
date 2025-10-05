@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Promotion Management - EduManage Pro{% endblock %}
+
+{% block page_title %}Promotion Management{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('bulk_promotion') }}" class="btn btn-primary">
+    <i class="fas fa-level-up-alt me-2"></i>Bulk Promotion
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>Promotion Tools
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <a href="{{ url_for('bulk_promotion') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-users me-2"></i>
+                                Bulk Promotion
+                                <small class="d-block mt-1 opacity-75">Promote entire classes</small>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#individualPromotionModal">
+                                <i class="fas fa-user me-2"></i>
+                                Individual Promotion
+                                <small class="d-block mt-1 opacity-75">Search and promote students</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Academic Years
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if academic_years %}
+                <div class="list-group">
+                    {% for year in academic_years %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ year.year }}</strong>
+                            {% if year.is_current %}
+                            <span class="badge bg-success ms-2">Current</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">
+                            {{ year.start_date.strftime('%b %d, %Y') }} - {{ year.end_date.strftime('%b %d, %Y') }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                    <p>No academic years configured</p>
+                    <a href="{{ url_for('add_academic_year') }}" class="btn btn-outline-primary">
+                        Add Academic Year
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Promotions
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_promotions %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>From → To</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for promotion in recent_promotions %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('student_detail', student_id=promotion.student_id) }}"
+                                       class="text-decoration-none">
+                                        {{ promotion.student.admission_no }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <small>
+                                        {{ promotion.from_class.name if promotion.from_class }}{% if promotion.from_stream %}-{{ promotion.from_stream.name }}{% endif %}
+                                        <i class="fas fa-arrow-right mx-1"></i>
+                                        {{ promotion.to_class.name }}{% if promotion.to_stream %}-{{ promotion.to_stream.name }}{% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if promotion.status.value == 'PROMOTED' %}bg-success{% elif promotion.status.value == 'REPEATED' %}bg-warning{% else %}bg-info{% endif %}">
+                                        {{ promotion.status.value }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ promotion.promotion_date.strftime('%m/%d') }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                    <p>No recent promotions</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Promotion Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Promoted:</strong> Student moves to next class level
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-redo text-warning me-2"></i>
+                        <strong>Repeated:</strong> Student stays in current class
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-exchange-alt text-info me-2"></i>
+                        <strong>Transferred:</strong> Student moves to different school
+                    </li>
+                </ul>
+
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> Use bulk promotion for standard class progressions and individual promotion for special cases.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Individual Promotion Modal -->
+<div class="modal fade" id="individualPromotionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Individual Student Promotion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="studentSearch" class="form-label">Search Student</label>
+                    <input type="text" class="form-control" id="studentSearch"
+                           placeholder="Enter admission number or name">
+                </div>
+
+                <div id="searchResults" class="mb-3" style="display: none;">
+                    <div class="list-group" id="studentList"></div>
+                </div>
+
+                <div class="text-center text-muted" id="searchPrompt">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <p>Start typing to search for students</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    let searchTimeout;
+
+    $('#studentSearch').on('input', function() {
+        clearTimeout(searchTimeout);
+        const query = $(this).val().trim();
+
+        if (query.length < 2) {
+            $('#searchResults').hide();
+            $('#searchPrompt').show();
+            return;
+        }
+
+        searchTimeout = setTimeout(function() {
+            searchStudents(query);
+        }, 300);
+    });
+
+    function searchStudents(query) {
+        $.ajax({
+            url: '/api/student_search',
+            data: { q: query },
+            success: function(data) {
+                $('#searchPrompt').hide();
+
+                if (data.length === 0) {
+                    $('#studentList').html('<div class="list-group-item text-muted">No students found</div>');
+                } else {
+                    let html = '';
+                    data.forEach(function(student) {
+                        html += `
+                            <a href="/promotions/individual/${student.id}" class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>${student.name}</strong><br>
+                                        <small class="text-muted">${student.admission_no}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">${student.class}</small><br>
+                                        <i class="fas fa-arrow-right text-primary"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    $('#studentList').html(html);
+                }
+
+                $('#searchResults').show();
+            },
+            error: function() {
+                $('#studentList').html('<div class="list-group-item text-danger">Error searching students</div>');
+                $('#searchResults').show();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Allocate Payment - EduManage Pro{% endblock %}
+{% block page_title %}Allocate Payment{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('student_detail', student_id=payment.student_id) }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Student
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Payment Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Receipt Number:</strong> {{ payment.receipt_number }}</p>
+                        <p><strong>Student:</strong> {{ payment.student.full_name }}</p>
+                        <p><strong>Admission No:</strong> {{ payment.student.admission_no }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Amount:</strong> {{ payment.amount|currency }}</p>
+                        <p><strong>Payment Date:</strong> {{ payment.payment_date.strftime('%d %b %Y') }}</p>
+                        <p><strong>Payment Mode:</strong> {{ payment.payment_mode.value }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Outstanding Assessments
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="allocation-form">
+                    {% if outstanding_assessments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fee Item</th>
+                                        <th>Term/Year</th>
+                                        <th>Outstanding Amount</th>
+                                        <th>Allocate Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assessment, outstanding in outstanding_assessments %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ assessment.fee_item.name }}</strong>
+                                            {% if assessment.description %}
+                                                <br><small class="text-muted">{{ assessment.description }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>Term {{ assessment.term }}/{{ assessment.year }}</td>
+                                        <td>{{ outstanding|currency }}</td>
+                                        <td>
+                                            <div class="input-group">
+                                                <span class="input-group-text">KSh</span>
+                                                <input type="number"
+                                                       class="form-control allocation-amount"
+                                                       data-assessment-id="{{ assessment.id }}"
+                                                       data-max="{{ '%.2f'|format(outstanding|float) }}"
+                                                       value="{{ '%.2f'|format(outstanding|float) }}"
+                                                       step="0.01"
+                                                       min="0"
+                                                       max="{{ '%.2f'|format(outstanding|float) }}">
+                                                <input type="hidden"
+                                                       name="allocations"
+                                                       class="allocation-hidden"
+                                                       value="{{ assessment.id }}:{{ '%.2f'|format(outstanding|float) }}">
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
+                                <strong>Total Payment: {{ payment.amount|currency }}</strong><br>
+                                <span id="total-allocated" class="text-info">Total Allocated: KSh 0.00</span><br>
+                                <span id="remaining-amount" class="text-warning">Remaining: {{ payment.amount|currency }}</span>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" id="auto-allocate-btn">
+                                    <i class="fas fa-magic me-2"></i>Auto Allocate
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="allocate-btn">
+                                    <i class="fas fa-check me-2"></i>Allocate Payment
+                                </button>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No outstanding assessments found for this student.
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>Allocation Summary
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">Payment Amount</small>
+                    <div class="h5 text-primary">{{ payment.amount|currency }}</div>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Total Outstanding</small>
+                    <div class="h6" id="total-outstanding">
+                        {% set total_outstanding = outstanding_assessments|sum(attribute='1')|default(0) %}
+                        {{ total_outstanding|currency }}
+                    </div>
+                </div>
+                <hr>
+                <div class="progress mb-2" style="height: 8px;">
+                    <div class="progress-bar" role="progressbar" id="allocation-progress"
+                         style="width: 0%"></div>
+                </div>
+                <small class="text-muted">Allocation Progress</small>
+            </div>
+        </div>
+
+        {% if payment.notes %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-sticky-note me-2"></i>Payment Notes
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ payment.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const paymentAmount = parseFloat('{{ payment.amount }}');
+
+    function updateAllocationSummary() {
+        let totalAllocated = 0;
+
+        $('.allocation-amount').each(function() {
+            const amount = parseFloat($(this).val()) || 0;
+            totalAllocated += amount;
+        });
+
+        const remaining = paymentAmount - totalAllocated;
+        const progressPercent = (totalAllocated / paymentAmount) * 100;
+
+        $('#total-allocated').text('Total Allocated: KSh ' + totalAllocated.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+        $('#remaining-amount').text('Remaining: KSh ' + remaining.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+        $('#allocation-progress').css('width', Math.min(progressPercent, 100) + '%');
+
+        // Update button state and styling
+        const allocateBtn = $('#allocate-btn');
+        const remainingSpan = $('#remaining-amount');
+
+        if (totalAllocated > paymentAmount) {
+            allocateBtn.prop('disabled', true);
+            remainingSpan.removeClass('text-warning text-success').addClass('text-danger');
+        } else if (Math.abs(remaining) < 0.01) {
+            allocateBtn.prop('disabled', false);
+            remainingSpan.removeClass('text-warning text-danger').addClass('text-success');
+        } else {
+            allocateBtn.prop('disabled', false);
+            remainingSpan.removeClass('text-danger text-success').addClass('text-warning');
+        }
+    }
+
+    $('.allocation-amount').on('input', function() {
+        const $input = $(this);
+        const assessmentId = $input.data('assessment-id');
+        let amount = parseFloat($input.val()) || 0;
+        const maxAmount = parseFloat($input.data('max'));
+
+        // Clamp to valid range
+        if (amount > maxAmount) {
+            amount = maxAmount;
+            $input.val(amount.toFixed(2));
+        } else if (amount < 0) {
+            amount = 0;
+            $input.val('0.00');
+        }
+
+        // Update hidden input with assessment_id:amount format
+        $input.siblings('.allocation-hidden').val(assessmentId + ':' + amount.toFixed(2));
+
+        updateAllocationSummary();
+    });
+
+    // Auto-allocate button
+    $('#auto-allocate-btn').on('click', function() {
+        let remainingPayment = paymentAmount;
+
+        $('.allocation-amount').each(function() {
+            const $input = $(this);
+            const assessmentId = $input.data('assessment-id');
+            const maxAmount = parseFloat($input.data('max'));
+
+            if (remainingPayment <= 0) {
+                $input.val('0.00');
+                $input.siblings('.allocation-hidden').val(assessmentId + ':0.00');
+                return;
+            }
+
+            const allocateAmount = Math.min(maxAmount, remainingPayment);
+            $input.val(allocateAmount.toFixed(2));
+            $input.siblings('.allocation-hidden').val(assessmentId + ':' + allocateAmount.toFixed(2));
+            remainingPayment -= allocateAmount;
+        });
+
+        updateAllocationSummary();
+    });
+
+    // Form validation before submit
+    $('#allocation-form').on('submit', function(e) {
+        let totalAllocated = 0;
+
+        $('.allocation-amount').each(function() {
+            const amount = parseFloat($(this).val()) || 0;
+            totalAllocated += amount;
+        });
+
+        if (totalAllocated > paymentAmount) {
+            e.preventDefault();
+            alert('Total allocation (KSh ' + totalAllocated.toFixed(2) + ') exceeds payment amount (KSh ' + paymentAmount.toFixed(2) + ').');
+            return false;
+        }
+
+        if (totalAllocated === 0) {
+            e.preventDefault();
+            if (!confirm('No amount has been allocated. Do you want to proceed anyway?')) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    // Initialize summary on page load
+    updateAllocationSummary();
+});
+</script>
+{% endblock %}

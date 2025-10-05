@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - EduManage Pro{% endblock %}
+
+{% block page_title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Fee Reports -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2 text-success"></i>
+                    Fee Reports
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Generate comprehensive fee collection and outstanding balance reports</p>
+
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('class_summary_report') }}" class="btn btn-outline-primary d-flex align-items-center">
+                        <i class="fas fa-chart-pie me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Class Summary Report</div>
+                            <small class="text-muted">Fee collection summary by class and stream</small>
+                        </div>
+                    </a>
+
+                    <a href="{{ url_for('outstanding_fees_report') }}" class="btn btn-outline-warning d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Outstanding Fees Report</div>
+                            <small class="text-muted">Students with pending fee payments</small>
+                        </div>
+                    </a>
+
+                    <a href="{{ url_for('student_statement', student_id=1) }}" class="btn btn-outline-info d-flex align-items-center"
+                       onclick="return promptForStudent(event, 'statement')">
+                        <i class="fas fa-file-alt me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Student Statement</div>
+                            <small class="text-muted">Detailed fee statement for individual student</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transport Reports -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bus me-2 text-primary"></i>
+                    Transport Reports
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Analyze transport revenue and vehicle utilization</p>
+
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('vehicle_revenue_report') }}" class="btn btn-outline-primary d-flex align-items-center">
+                        <i class="fas fa-bus-alt me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Vehicle Revenue Report</div>
+                            <small class="text-muted">Revenue analysis by vehicle and route</small>
+                        </div>
+                    </a>
+
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-route me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Route Efficiency Report</div>
+                            <small class="text-muted">Coming soon - route optimization analysis</small>
+                        </div>
+                    </button>
+
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-users me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Transport Utilization</div>
+                            <small class="text-muted">Coming soon - student transport usage</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Reports -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2 text-info"></i>
+                    Financial Reports
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Comprehensive financial analysis and cash flow reports</p>
+
+                <div class="d-grid gap-3">
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-coins me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Income vs Expenses</div>
+                            <small class="text-muted">Coming soon - profit/loss analysis</small>
+                        </div>
+                    </button>
+
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-calendar-check me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Monthly Financial Summary</div>
+                            <small class="text-muted">Coming soon - monthly breakdown</small>
+                        </div>
+                    </button>
+
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-credit-card me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Payment Method Analysis</div>
+                            <small class="text-muted">Coming soon - payment trends</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Reports -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-graduate me-2 text-success"></i>
+                    Student Reports
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Student enrollment and demographic analysis</p>
+
+                <div class="d-grid gap-3">
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-chart-bar me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Enrollment Statistics</div>
+                            <small class="text-muted">Coming soon - enrollment trends</small>
+                        </div>
+                    </button>
+
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-level-up-alt me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Promotion Analysis</div>
+                            <small class="text-muted">Coming soon - promotion success rates</small>
+                        </div>
+                    </button>
+
+                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
+                        <i class="fas fa-percentage me-3"></i>
+                        <div class="text-start">
+                            <div class="fw-bold">Boarder vs Day Students</div>
+                            <small class="text-muted">Coming soon - student type analysis</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Report Generation -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-lightning-bolt me-2 text-warning"></i>
+            Quick Report Generator
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <form class="row g-3" id="quick-report-form">
+                    <div class="col-md-3">
+                        <select class="form-select" id="report-type">
+                            <option value="">Select Report Type</option>
+                            <option value="class-summary">Class Summary</option>
+                            <option value="outstanding">Outstanding Fees</option>
+                            <option value="vehicle-revenue">Vehicle Revenue</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <select class="form-select" id="report-term">
+                            <option value="">All Terms</option>
+                            <option value="1">Term 1</option>
+                            <option value="2">Term 2</option>
+                            <option value="3">Term 3</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" id="report-year" placeholder="Year"
+                               min="2020" max="2050" value="2024">
+                    </div>
+
+                    <div class="col-md-3">
+                        <select class="form-select" id="report-class">
+                            <option value="">All Classes</option>
+                            <!-- Classes will be loaded dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-primary w-100" id="generate-report">
+                            <i class="fas fa-play me-1"></i>Generate
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>Select report type and filters, then click Generate to create a custom report.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Options -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-download me-2 text-secondary"></i>
+            Export & Print Options
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Available Export Formats</h6>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-danger btn-sm" disabled>
+                        <i class="fas fa-file-pdf me-1"></i>PDF
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" disabled>
+                        <i class="fas fa-file-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" disabled>
+                        <i class="fas fa-file-csv me-1"></i>CSV
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" disabled>
+                        <i class="fas fa-print me-1"></i>Print
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-2">Export functionality coming soon</small>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Scheduled Reports</h6>
+                <p class="text-muted mb-2">Set up automated report generation and delivery</p>
+                <button class="btn btn-outline-primary btn-sm" disabled>
+                    <i class="fas fa-calendar-plus me-1"></i>Schedule Reports
+                </button>
+                <small class="text-muted d-block mt-2">Feature coming in future update</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Load classes for quick report filter
+    loadClasses();
+
+    // Handle quick report generation
+    $('#generate-report').click(function() {
+        const reportType = $('#report-type').val();
+        const term = $('#report-term').val();
+        const year = $('#report-year').val();
+        const classId = $('#report-class').val();
+
+        if (!reportType) {
+            alert('Please select a report type');
+            return;
+        }
+
+        // Build URL with parameters
+        let url = '';
+        const params = new URLSearchParams();
+
+        if (term) params.append('term', term);
+        if (year) params.append('year', year);
+        if (classId) params.append('class_id', classId);
+
+        switch (reportType) {
+            case 'class-summary':
+                url = '{{ url_for("class_summary_report") }}';
+                break;
+            case 'outstanding':
+                url = '{{ url_for("outstanding_fees_report") }}';
+                break;
+            case 'vehicle-revenue':
+                url = '{{ url_for("vehicle_revenue_report") }}';
+                break;
+            default:
+                alert('Invalid report type selected');
+                return;
+        }
+
+        const queryString = params.toString();
+        window.location.href = url + (queryString ? '?' + queryString : '');
+    });
+
+    function loadClasses() {
+        // In a real application, this would fetch from an API
+        const sampleClasses = [
+            { id: 1, name: 'Form 1' },
+            { id: 2, name: 'Form 2' },
+            { id: 3, name: 'Form 3' },
+            { id: 4, name: 'Form 4' }
+        ];
+
+        const classSelect = $('#report-class');
+        sampleClasses.forEach(function(cls) {
+            classSelect.append(`<option value="${cls.id}">${cls.name}</option>`);
+        });
+    }
+
+    // Set current year as default
+    const currentYear = new Date().getFullYear();
+    $('#report-year').val(currentYear);
+});
+
+// Function to prompt for student ID (used by student statement link)
+function promptForStudent(event, type) {
+    event.preventDefault();
+
+    const studentId = prompt('Enter Student Admission Number or ID:');
+    if (studentId) {
+        if (type === 'statement') {
+            // In a real app, you'd search for the student first
+            window.location.href = `{{ url_for('student_statement', student_id=1) }}`.replace('1', studentId);
+        }
+    }
+    return false;
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block page_title %}Add Student{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('student_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Students
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Add New Student</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <!-- Personal Information -->
+                <div class="col-lg-6">
+                    <h6 class="text-primary mb-3">Personal Information</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label">Admission Number *</label>
+                        <input type="text" class="form-control" name="admission_no" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" name="date_of_birth">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Student Type *</label>
+                        <select class="form-select" name="student_type" required>
+                            <option value="">Select Type</option>
+                            <option value="DAY">Day Scholar</option>
+                            <option value="BOARDER">Boarder</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Academic Information -->
+                <div class="col-lg-6">
+                    <h6 class="text-primary mb-3">Academic Information</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label">Class *</label>
+                        <select class="form-select" name="class_id" required onchange="loadStreams(this.value)">
+                            <option value="">Select Class</option>
+                            {% for class in classes %}
+                                <option value="{{ class.id }}">{{ class.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Stream</label>
+                        <select class="form-select" name="stream_id" id="stream-select">
+                            <option value="">Select Stream</option>
+                        </select>
+                    </div>
+
+                    <h6 class="text-primary mb-3 mt-4">Parent/Guardian Information</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label">Parent/Guardian Name</label>
+                        <input type="text" class="form-control" name="parent_name">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" name="parent_phone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" name="parent_email">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transport Information -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6 class="text-primary mb-3">Transport Information (Optional)</h6>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Vehicle</label>
+                    <select class="form-select" name="vehicle_id">
+                        <option value="">No Transport</option>
+                        {% for vehicle in vehicles %}
+                            <option value="{{ vehicle.id }}">{{ vehicle.registration_number }} - {{ vehicle.route_description }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Distance from School (KM)</label>
+                    <input type="number" class="form-control" name="transport_distance_km" step="0.1">
+                </div>
+            </div>
+
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Add Student
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadStreams(classId) {
+    const streamSelect = document.getElementById('stream-select');
+    streamSelect.innerHTML = '<option value="">Select Stream</option>';
+
+    if (classId) {
+        fetch(`/api/streams/${classId}`)
+            .then(response => response.json())
+            .then(streams => {
+                streams.forEach(stream => {
+                    const option = document.createElement('option');
+                    option.value = stream.id;
+                    option.textContent = stream.name;
+                    streamSelect.appendChild(option);
+                });
+            });
+    }
+}
+</script>
+{% endblock %}

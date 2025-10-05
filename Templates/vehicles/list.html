@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Vehicles - EduManage Pro{% endblock %}
+{% block page_title %}Transport Vehicles{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('add_vehicle') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Add New Vehicle
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-bus me-2"></i>All Vehicles
+            </h5>
+            <span class="badge bg-info">{{ vehicles|length }} vehicles</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if vehicles %}
+            <div class="row">
+                {% for vehicle in vehicles %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 {{ 'border-success' if vehicle.is_active else 'border-warning' }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title text-primary">{{ vehicle.registration_number }}</h6>
+                                <span class="badge {{ 'bg-success' if vehicle.is_active else 'bg-warning' }}">
+                                    {{ 'Active' if vehicle.is_active else 'Inactive' }}
+                                </span>
+                            </div>
+
+                            <div class="mb-3">
+                                <p class="card-text mb-1">
+                                    <i class="fas fa-car me-2 text-muted"></i>
+                                    <strong>{{ vehicle.make }} {{ vehicle.model }}</strong>
+                                </p>
+
+                                {% if vehicle.capacity %}
+                                <p class="card-text mb-1">
+                                    <i class="fas fa-users me-2 text-muted"></i>
+                                    Capacity: {{ vehicle.capacity }} students
+                                </p>
+                                {% endif %}
+
+                                {% if vehicle.driver_name %}
+                                <p class="card-text mb-1">
+                                    <i class="fas fa-user me-2 text-muted"></i>
+                                    Driver: {{ vehicle.driver_name }}
+                                </p>
+                                {% endif %}
+
+                                {% if vehicle.driver_phone %}
+                                <p class="card-text mb-1">
+                                    <i class="fas fa-phone me-2 text-muted"></i>
+                                    {{ vehicle.driver_phone }}
+                                </p>
+                                {% endif %}
+
+                                {% if vehicle.route_description %}
+                                <p class="card-text mb-1">
+                                    <i class="fas fa-route me-2 text-muted"></i>
+                                    {{ vehicle.route_description[:50] }}{% if vehicle.route_description|length > 50 %}...{% endif %}
+                                </p>
+                                {% endif %}
+                            </div>
+
+                            <div class="row text-center border-top pt-2">
+                                <div class="col-6">
+                                    <div class="text-muted small">Students</div>
+                                    <div class="fw-bold text-primary">{{ vehicle.students|length }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-muted small">Utilization</div>
+                                    <div class="fw-bold text-success">
+                                        {% if vehicle.capacity %}
+                                            {{ ((vehicle.students|length / vehicle.capacity) * 100)|round }}%
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View Details
+                                </a>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                                            data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="#">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#">
+                                                <i class="fas fa-{{ 'ban' if vehicle.is_active else 'check' }} me-2"></i>
+                                                {{ 'Deactivate' if vehicle.is_active else 'Activate' }}
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="#"
+                                               onclick="confirmDelete('{{ vehicle.registration_number }}')">
+                                                <i class="fas fa-trash me-2"></i>Delete
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bus fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Vehicles Found</h4>
+                <p class="text-muted">Start by adding your first transport vehicle to the system.</p>
+                <a href="{{ url_for('add_vehicle') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add First Vehicle
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mt-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Vehicles</h6>
+                        <h3 class="mb-0">{{ vehicles|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-bus fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Active Vehicles</h6>
+                        <h3 class="mb-0">{{ vehicles|selectattr('is_active')|list|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Capacity</h6>
+                        <h3 class="mb-0">{{ vehicles|sum(attribute='capacity')|default(0) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Students Using Transport</h6>
+                        <h3 class="mb-0">{{ vehicles|map(attribute='students')|map('length')|sum }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-graduate fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(vehicleNumber) {
+    if (confirm(`Are you sure you want to delete vehicle ${vehicleNumber}? This action cannot be undone.`)) {
+        // Add delete functionality here
+        alert('Delete functionality not implemented yet.');
+    }
+}
+
+// Add some interactivity
+$(document).ready(function() {
+    // Animate progress bars on load
+    $('.progress-bar').each(function() {
+        const width = $(this).attr('aria-valuenow') + '%';
+        $(this).animate({width: width}, 1000);
+    });
+
+    // Add hover effects to cards
+    $('.card').hover(
+        function() {
+            $(this).addClass('shadow-lg').css('transform', 'translateY(-2px)');
+        },
+        function() {
+            $(this).removeClass('shadow-lg').css('transform', 'translateY(0)');
+        }
+    );
+});
+</script>
+{% endblock %}

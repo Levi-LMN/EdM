@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block page_title %}Edit Class{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('academic_management') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Academic Management
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edit Class - {{ class_obj.name }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Class Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ class_obj.name }}" required>
+                                <div class="form-text">e.g., Form 1, Grade 8, PP1, etc.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="level" class="form-label">Level</label>
+                                <select class="form-select" id="level" name="level">
+                                    <option value="">Select Level</option>
+                                    <option value="Pre-Primary" {{ 'selected' if class_obj.level == 'Pre-Primary' }}>Pre-Primary</option>
+                                    <option value="Primary" {{ 'selected' if class_obj.level == 'Primary' }}>Primary</option>
+                                    <option value="Secondary" {{ 'selected' if class_obj.level == 'Secondary' }}>Secondary</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="next_class_id" class="form-label">Next Class (For Promotion)</label>
+                        <select class="form-select" id="next_class_id" name="next_class_id">
+                            <option value="">No next class</option>
+                            {% for next_class in classes %}
+                                <option value="{{ next_class.id }}" 
+                                        {{ 'selected' if class_obj.next_class_id == next_class.id }}>
+                                    {{ next_class.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select which class students from this class will be promoted to</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Class
+                            </button>
+                            <a href="{{ url_for('academic_management') }}" class="btn btn-secondary ms-2">Cancel</a>
+                        </div>
+                    </div>
+                </form>
+
+                {% if class_obj.streams %}
+                <hr class="my-4">
+                <h6>Current Streams in {{ class_obj.name }}:</h6>
+                <div class="row">
+                    {% for stream in class_obj.streams %}
+                    <div class="col-md-4 mb-2">
+                        <div class="alert alert-info py-2">
+                            <strong>{{ stream.name }}</strong> (Cap: {{ stream.capacity }})
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

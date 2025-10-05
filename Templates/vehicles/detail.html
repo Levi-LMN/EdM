@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vehicle.registration_number }} - EduManage Pro{% endblock %}
+{% block page_title %}Vehicle: {{ vehicle.registration_number }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <button class="btn btn-outline-primary" onclick="editVehicle()">
+        <i class="fas fa-edit me-2"></i>Edit Vehicle
+    </button>
+    <button class="btn btn-outline-info" onclick="printReport()">
+        <i class="fas fa-print me-2"></i>Print Report
+    </button>
+    <a href="{{ url_for('vehicle_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Vehicles
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Vehicle Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bus me-2"></i>Vehicle Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold text-muted">Registration:</td>
+                                <td>{{ vehicle.registration_number }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Make & Model:</td>
+                                <td>{{ vehicle.make }} {{ vehicle.model }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Capacity:</td>
+                                <td>
+                                    {% if vehicle.capacity %}
+                                        {{ vehicle.capacity }} students
+                                    {% else %}
+                                        Not specified
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Status:</td>
+                                <td>
+                                    <span class="badge {{ 'bg-success' if vehicle.is_active else 'bg-warning' }}">
+                                        {{ 'Active' if vehicle.is_active else 'Inactive' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold text-muted">Driver:</td>
+                                <td>{{ vehicle.driver_name or 'Not assigned' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Driver Phone:</td>
+                                <td>
+                                    {% if vehicle.driver_phone %}
+                                        <a href="tel:{{ vehicle.driver_phone }}" class="text-decoration-none">
+                                            {{ vehicle.driver_phone }}
+                                        </a>
+                                    {% else %}
+                                        Not available
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Current Load:</td>
+                                <td>
+                                    <span class="text-primary fw-bold">{{ students|length }}</span>
+                                    {% if vehicle.capacity %}
+                                        / {{ vehicle.capacity }} students
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Utilization:</td>
+                                <td>
+                                    {% if vehicle.capacity %}
+                                        {% set utilization = ((students|length / vehicle.capacity) * 100)|round %}
+                                        <div class="progress" style="height: 20px; width: 120px;">
+                                            <div class="progress-bar {{ 'bg-success' if utilization < 80 else 'bg-warning' if utilization < 100 else 'bg-danger' }}"
+                                                 style="width: {{ utilization }}%">
+                                                {{ utilization }}%
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                {% if vehicle.route_description %}
+                <hr>
+                <h6 class="text-muted mb-2">
+                    <i class="fas fa-route me-2"></i>Route Description
+                </h6>
+                <p class="mb-0">{{ vehicle.route_description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Students List -->
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-graduate me-2"></i>Students Using This Vehicle
+                    </h5>
+                    <span class="badge bg-info">{{ students|length }} students</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Admission No</th>
+                                    <th>Student Name</th>
+                                    <th>Class</th>
+                                    <th>Distance (KM)</th>
+                                    <th>Parent Contact</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                           class="text-decoration-none fw-bold">
+                                            {{ student.admission_no }}
+                                        </a>
+                                    </td>
+                                    <td>{{ student.full_name }}</td>
+                                    <td>
+                                        {{ student.class_obj.name }}{% if student.stream %}-{{ student.stream.name }}{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.transport_distance_km %}
+                                            {{ student.transport_distance_km }} km
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.parent_phone %}
+                                            <a href="tel:{{ student.parent_phone }}" class="text-decoration-none">
+                                                {{ student.parent_phone }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">No contact</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-outline-warning btn-sm"
+                                                    onclick="removeFromVehicle({{ student.id }}, '{{ student.full_name }}')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Total Distance Coverage:
+                                <strong>{{ students|sum(attribute='transport_distance_km')|default(0) }} km</strong>
+                            </small>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Students Assigned</h5>
+                        <p class="text-muted">This vehicle has no students currently assigned to it.</p>
+                        <a href="{{ url_for('student_list') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-2"></i>Assign Students
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Revenue Summary -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Revenue Summary
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="h4 text-success mb-1">{{ total_revenue|currency }}</div>
+                    <small class="text-muted">Estimated Annual Revenue</small>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="text-muted small">Per Term</div>
+                        <div class="fw-bold">{{ (total_revenue/3)|currency }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Per Month</div>
+                        <div class="fw-bold">{{ (total_revenue/12)|currency }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>Quick Stats
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Current Students:</span>
+                    <span class="fw-bold text-primary">{{ students|length }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Available Seats:</span>
+                    <span class="fw-bold text-success">
+                        {% if vehicle.capacity %}
+                            {{ vehicle.capacity - students|length }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Total Distance:</span>
+                    <span class="fw-bold">{{ students|sum(attribute='transport_distance_km')|default(0) }} km</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Avg Distance:</span>
+                    <span class="fw-bold">
+                        {% if students|length > 0 %}
+                            {{ ((students|sum(attribute='transport_distance_km')|default(0)) / students|length)|round(1) }} km
+                        {% else %}
+                            0 km
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Vehicle Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="assignStudents()">
+                        <i class="fas fa-user-plus me-2"></i>Assign Students
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="viewRoute()">
+                        <i class="fas fa-map-marked-alt me-2"></i>View Route
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="maintenanceLog()">
+                        <i class="fas fa-wrench me-2"></i>Maintenance Log
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="generateReport()">
+                        <i class="fas fa-file-alt me-2"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editVehicle() {
+    alert('Edit functionality will be implemented');
+}
+
+function printReport() {
+    window.print();
+}
+
+function removeFromVehicle(studentId, studentName) {
+    if (confirm(`Remove ${studentName} from this vehicle?`)) {
+        alert('Remove functionality will be implemented');
+    }
+}
+
+function assignStudents() {
+    alert('Assign students functionality will be implemented');
+}
+
+function viewRoute() {
+    alert('Route mapping functionality will be implemented');
+}
+
+function maintenanceLog() {
+    alert('Maintenance log functionality will be implemented');
+}
+
+function generateReport() {
+    alert('Report generation functionality will be implemented');
+}
+
+$(document).ready(function() {
+    // Add hover effects to student rows
+    $('tbody tr').hover(
+        function() {
+            $(this).addClass('table-active');
+        },
+        function() {
+            $(this).removeClass('table-active');
+        }
+    );
+
+    // Animate progress bar
+    $('.progress-bar').each(function() {
+        const width = $(this).css('width');
+        $(this).css('width', '0').animate({width: width}, 1000);
+    });
+});
+</script>
+{% endblock %}

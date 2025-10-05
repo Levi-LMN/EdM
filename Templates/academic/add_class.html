@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Add Class - EduManage Pro{% endblock %}
+
+{% block page_title %}Add New Class{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('academic_management') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Academic Setup
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Class Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            Class Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               id="name"
+                               name="name"
+                               placeholder="e.g., Form 1, Grade 8, Class 7"
+                               required>
+                        <div class="form-text">
+                            Enter the official class name as it appears in school records
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="level" class="form-label">Education Level</label>
+                    <div class="mb-3">
+                        <label for="level" class="form-label">Education Level</label>
+                        <select class="form-select" id="level" name="level">
+                            <option value="">Select Level (Optional)</option>
+                            <option value="Primary">Primary</option>
+                            <option value="Secondary">Secondary</option>
+                            <option value="Pre-Primary">Pre-Primary</option>
+                        </select>
+                        <div class="form-text">
+                            Helps categorize classes for reporting and fee structure
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="next_class_id" class="form-label">Next Class (Progression)</label>
+                        <select class="form-select" id="next_class_id" name="next_class_id">
+                            <option value="">No automatic progression</option>
+                            {% for class in classes %}
+                                <option value="{{ class.id }}">{{ class.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Select which class students progress to after completing this class
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> After creating the class, you can add streams (sections) to organize students within the class.
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('academic_management') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Class
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Example Classes for Reference -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Common Class Names
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6 class="text-primary">Primary Level</h6>
+                        <ul class="list-unstyled">
+                            <li>• Grade 1, Grade 2, Grade 3...</li>
+                            <li>• Class 1, Class 2, Class 3...</li>
+                            <li>• Standard 1, Standard 2...</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-success">Secondary Level</h6>
+                        <ul class="list-unstyled">
+                            <li>• Form 1, Form 2, Form 3, Form 4</li>
+                            <li>• Year 9, Year 10, Year 11, Year 12</li>
+                            <li>• Grade 9, Grade 10, Grade 11, Grade 12</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-info">Pre-Primary</h6>
+                        <ul class="list-unstyled">
+                            <li>• Nursery, Baby Class</li>
+                            <li>• PP1, PP2</li>
+                            <li>• Kindergarten</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-suggest progression based on class name
+    $('#name').on('input', function() {
+        const className = $(this).val().toLowerCase();
+        const nextClassSelect = $('#next_class_id');
+
+        // Clear previous suggestions
+        nextClassSelect.find('option').removeClass('suggested');
+
+        // Simple progression logic
+        if (className.includes('form 1') || className.includes('grade 8')) {
+            suggestNextClass('Form 2', 'Grade 9');
+        } else if (className.includes('form 2') || className.includes('grade 9')) {
+            suggestNextClass('Form 3', 'Grade 10');
+        } else if (className.includes('form 3') || className.includes('grade 10')) {
+            suggestNextClass('Form 4', 'Grade 11');
+        }
+    });
+
+    function suggestNextClass(...suggestions) {
+        const nextClassSelect = $('#next_class_id');
+
+        suggestions.forEach(suggestion => {
+            nextClassSelect.find('option').each(function() {
+                if ($(this).text().toLowerCase().includes(suggestion.toLowerCase())) {
+                    $(this).addClass('suggested').css('background-color', '#e3f2fd');
+                }
+            });
+        });
+    }
+
+    // Form validation
+    $('form').submit(function(e) {
+        const className = $('#name').val().trim();
+
+        if (className.length < 2) {
+            e.preventDefault();
+            alert('Please enter a valid class name (at least 2 characters)');
+            $('#name').focus();
+            return false;
+        }
+
+        // Check for duplicate names (simplified client-side check)
+        const existingClasses = [
+            {% for class in classes %}
+                '{{ class.name|lower }}'{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        if (existingClasses.includes(className.toLowerCase())) {
+            e.preventDefault();
+            alert('A class with this name already exists. Please choose a different name.');
+            $('#name').focus().select();
+            return false;
+        }
+    });
+
+    // Auto-capitalize class names
+    $('#name').on('blur', function() {
+        let value = $(this).val();
+        // Capitalize each word
+        value = value.replace(/\b\w+/g, function(word) {
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        });
+        $(this).val(value);
+    });
+});
+</script>
+{% endblock %}

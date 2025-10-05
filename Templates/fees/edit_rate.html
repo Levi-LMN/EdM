@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Fee Rate{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil-square"></i> Edit Fee Rate
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="editFeeRateForm">
+                        <!-- Fee Item Selection -->
+                        <div class="mb-3">
+                            <label for="fee_item_id" class="form-label">
+                                Fee Item <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="fee_item_id" name="fee_item_id" required>
+                                <option value="">Select Fee Item</option>
+                                {% for item in fee_items %}
+                                <option value="{{ item.id }}" 
+                                        {% if item.id == fee_rate.fee_item_id %}selected{% endif %}
+                                        data-is-per-km="{{ item.is_per_km }}"
+                                        data-scope="{{ item.scope.value }}">
+                                    {{ item.name }} ({{ item.code }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Term and Year -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="term" class="form-label">
+                                    Term <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="term" name="term" required>
+                                    <option value="1" {% if fee_rate.term == 1 %}selected{% endif %}>Term 1</option>
+                                    <option value="2" {% if fee_rate.term == 2 %}selected{% endif %}>Term 2</option>
+                                    <option value="3" {% if fee_rate.term == 3 %}selected{% endif %}>Term 3</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="year" class="form-label">
+                                    Year <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="year" name="year" 
+                                       value="{{ fee_rate.year }}" required min="2020" max="2030">
+                            </div>
+                        </div>
+
+                        <!-- Scope Selection (Class/Stream) -->
+                        <div class="mb-3">
+                            <label class="form-label">Applicability</label>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Leave class and stream empty for rates that apply to all students
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="class_id" class="form-label">Class (Optional)</label>
+                                <select class="form-select" id="class_id" name="class_id">
+                                    <option value="">All Classes</option>
+                                    {% for cls in classes %}
+                                    <option value="{{ cls.id }}" 
+                                            {% if cls.id == fee_rate.class_id %}selected{% endif %}>
+                                        {{ cls.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="stream_id" class="form-label">Stream (Optional)</label>
+                                <select class="form-select" id="stream_id" name="stream_id">
+                                    <option value="">All Streams</option>
+                                    {% if fee_rate.stream %}
+                                    <option value="{{ fee_rate.stream_id }}" selected>
+                                        {{ fee_rate.stream.class_obj.name }}-{{ fee_rate.stream.name }}
+                                    </option>
+                                    {% endif %}
+                                </select>
+                                <small class="form-text text-muted">Select a class first to see streams</small>
+                            </div>
+                        </div>
+
+                        <!-- Student Type -->
+                        <div class="mb-3">
+                            <label for="student_type" class="form-label">Student Type (Optional)</label>
+                            <select class="form-select" id="student_type" name="student_type">
+                                <option value="">All Student Types</option>
+                                <option value="DAY" {% if fee_rate.student_type and fee_rate.student_type.value == 'DAY' %}selected{% endif %}>
+                                    Day Scholar
+                                </option>
+                                <option value="BOARDER" {% if fee_rate.student_type and fee_rate.student_type.value == 'BOARDER' %}selected{% endif %}>
+                                    Boarder
+                                </option>
+                            </select>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Rate Amounts -->
+                        <h6 class="mb-3">Rate Amount</h6>
+                        
+                        <div class="row mb-3" id="fixedAmountGroup">
+                            <div class="col-md-12">
+                                <label for="amount" class="form-label">
+                                    Fixed Amount (KSh)
+                                </label>
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       value="{{ fee_rate.amount or '' }}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                                <small class="form-text text-muted">
+                                    Enter the fixed fee amount for this rate
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3" id="perKmAmountGroup" style="display: none;">
+                            <div class="col-md-12">
+                                <label for="rate_per_km" class="form-label">
+                                    Rate Per Kilometer (KSh)
+                                </label>
+                                <input type="number" class="form-control" id="rate_per_km" name="rate_per_km" 
+                                       value="{{ fee_rate.rate_per_km or '' }}" 
+                                       step="0.01" min="0" placeholder="0.00">
+                                <small class="form-text text-muted">
+                                    Enter the rate per kilometer for transport fees
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning" id="rateWarning" style="display: none;">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Please enter either a fixed amount or a rate per kilometer
+                        </div>
+
+                        <!-- Active Status -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       value="1" {% if fee_rate.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Active (Rate will be used in assessments)
+                                </label>
+                            </div>
+                        </div>
+
+                        {% if existing_assessments_count > 0 %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Warning:</strong> This rate has been used in {{ existing_assessments_count }} existing assessment(s). 
+                            Changes may affect how fees are calculated.
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('fee_rates_list') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="button" class="btn btn-danger ms-auto" onclick="deleteRate()">
+                                <i class="bi bi-trash"></i> Delete Rate
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Current Rate Info -->
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Current Rate Info
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td class="text-muted">Fee Item:</td>
+                            <td><strong>{{ fee_rate.fee_item.name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Code:</td>
+                            <td><span class="badge bg-secondary">{{ fee_rate.fee_item.code }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Period:</td>
+                            <td>
+                                <span class="badge bg-primary">
+                                    Term {{ fee_rate.term }}/{{ fee_rate.year }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Scope:</td>
+                            <td>
+                                {% if fee_rate.stream %}
+                                <span class="badge bg-info">
+                                    {{ fee_rate.class_obj.name }}-{{ fee_rate.stream.name }}
+                                </span>
+                                {% elif fee_rate.class_obj %}
+                                <span class="badge bg-primary">{{ fee_rate.class_obj.name }}</span>
+                                {% else %}
+                                <span class="badge bg-success">All Students</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Status:</td>
+                            <td>
+                                {% if fee_rate.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Usage Statistics -->
+            {% if usage_stats %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Usage Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Assessments:</span>
+                            <span class="badge bg-primary">{{ usage_stats.assessments_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Students Affected:</span>
+                            <span class="badge bg-info">{{ usage_stats.students_affected }}</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <p class="text-muted mb-1">Total Amount</p>
+                        <h4 class="text-success mb-0">
+                            KSh {{ "{:,.2f}".format(usage_stats.total_amount) }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Reference -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-book"></i> Quick Reference
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Rate Types:</strong>
+                        <ul class="mb-2">
+                            <li><strong>Fixed Amount:</strong> Same fee for all students</li>
+                            <li><strong>Per KM:</strong> Calculated based on distance (transport)</li>
+                        </ul>
+                        
+                        <strong>Applicability:</strong>
+                        <ul class="mb-0">
+                            <li><strong>Universal:</strong> No class/stream selection needed</li>
+                            <li><strong>Class Level:</strong> Select class only</li>
+                            <li><strong>Stream Level:</strong> Select both class and stream</li>
+                        </ul>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden delete form -->
+<form id="deleteForm" method="POST" action="{{ url_for('delete_fee_rate', rate_id=fee_rate.id) }}" style="display:none;"></form>
+
+<script>
+// Fee item change handler
+document.getElementById('fee_item_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const isPerKm = selectedOption.dataset.isPerKm === 'True';
+    
+    // Show/hide appropriate amount fields
+    if (isPerKm) {
+        document.getElementById('fixedAmountGroup').style.display = 'none';
+        document.getElementById('perKmAmountGroup').style.display = 'block';
+        document.getElementById('amount').value = '';
+    } else {
+        document.getElementById('fixedAmountGroup').style.display = 'block';
+        document.getElementById('perKmAmountGroup').style.display = 'none';
+        document.getElementById('rate_per_km').value = '';
+    }
+});
+
+// Class selection handler - load streams
+document.getElementById('class_id').addEventListener('change', function() {
+    const classId = this.value;
+    const streamSelect = document.getElementById('stream_id');
+    
+    streamSelect.innerHTML = '<option value="">All Streams</option>';
+    
+    if (classId) {
+        fetch(`/api/streams/${classId}`)
+            .then(response => response.json())
+            .then(streams => {
+                streams.forEach(stream => {
+                    const option = document.createElement('option');
+                    option.value = stream.id;
+                    option.textContent = stream.name;
+                    streamSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading streams:', error));
+    }
+});
+
+// Initialize form based on current fee item
+window.addEventListener('DOMContentLoaded', function() {
+    const feeItemSelect = document.getElementById('fee_item_id');
+    const selectedOption = feeItemSelect.options[feeItemSelect.selectedIndex];
+    const isPerKm = selectedOption.dataset.isPerKm === 'True';
+    
+    if (isPerKm) {
+        document.getElementById('fixedAmountGroup').style.display = 'none';
+        document.getElementById('perKmAmountGroup').style.display = 'block';
+    } else {
+        document.getElementById('fixedAmountGroup').style.display = 'block';
+        document.getElementById('perKmAmountGroup').style.display = 'none';
+    }
+});
+
+// Form validation
+document.getElementById('editFeeRateForm').addEventListener('submit', function(e) {
+    const amount = document.getElementById('amount').value;
+    const ratePerKm = document.getElementById('rate_per_km').value;
+    const warning = document.getElementById('rateWarning');
+    
+    if (!amount && !ratePerKm) {
+        e.preventDefault();
+        warning.style.display = 'block';
+        window.scrollTo({ top: warning.offsetTop - 100, behavior: 'smooth' });
+        return false;
+    }
+    
+    warning.style.display = 'none';
+});
+
+// Delete rate function
+function deleteRate() {
+    if (confirm('⚠️ WARNING: Are you sure you want to DELETE this fee rate?\n\nThis action cannot be undone if assessments exist.\n\nClick OK to proceed with deletion.')) {
+        document.getElementById('deleteForm').submit();
+    }
+}
+</script>
+
+<style>
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .card-header h6 {
+        font-weight: 600;
+    }
+    
+    .table-borderless td {
+        padding: 0.25rem 0;
+    }
+</style>
+{% endblock %}

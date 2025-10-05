@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block page_title %}Add Academic Year{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('academic_management') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Academic Setup
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-plus me-2 text-primary"></i>
+                    Create New Academic Year
+                </h5>
+                <p class="text-muted small mb-0 mt-2">
+                    Set up a new academic year with start and end dates. Only one academic year can be active at a time.
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_academic_year') }}" id="academicYearForm">
+                    <!-- Year Field -->
+                    <div class="mb-4">
+                        <label for="year" class="form-label required">
+                            <i class="fas fa-calendar-alt me-2"></i>Academic Year
+                        </label>
+                        <input type="number"
+                               class="form-control form-control-lg"
+                               id="year"
+                               name="year"
+                               min="2020"
+                               max="2030"
+                               value="{{ current_year or '' }}"
+                               required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Enter the year when this academic year begins (e.g., 2024 for 2024-2025)
+                        </div>
+                        <div class="invalid-feedback" id="yearError"></div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="start_date" class="form-label required">
+                                <i class="fas fa-play me-2"></i>Start Date
+                            </label>
+                            <input type="date"
+                                   class="form-control"
+                                   id="start_date"
+                                   name="start_date"
+                                   required>
+                            <div class="form-text">When the academic year begins</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_date" class="form-label required">
+                                <i class="fas fa-stop me-2"></i>End Date
+                            </label>
+                            <input type="date"
+                                   class="form-control"
+                                   id="end_date"
+                                   name="end_date"
+                                   required>
+                            <div class="form-text">When the academic year ends</div>
+                        </div>
+                    </div>
+
+                    <!-- Current Year Toggle -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="is_current"
+                                   name="is_current"
+                                   value="1">
+                            <label class="form-check-label fw-semibold" for="is_current">
+                                <i class="fas fa-star me-2 text-warning"></i>
+                                Set as Current Academic Year
+                            </label>
+                        </div>
+                        <div class="form-text ms-4">
+                            <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+                            <strong>Note:</strong> Setting this as current will deactivate any other current academic year.
+                        </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="alert alert-info" id="yearPreview" style="display: none;">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-eye me-2"></i>
+                            <strong>Academic Year Preview</strong>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Year</small>
+                                <span id="previewYear" class="fw-bold"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Duration</small>
+                                <span id="previewDuration" class="fw-bold"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Status</small>
+                                <span id="previewStatus" class="fw-bold"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('academic_management') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-plus me-2"></i>Create Academic Year
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Card -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-question-circle me-2 text-info"></i>
+                    Academic Year Guidelines
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                <strong>Year Format:</strong> Use the starting year (e.g., 2024 for 2024-2025)
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                <strong>Dates:</strong> Typically runs from January to December
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                <strong>Current Year:</strong> Only one can be active for fee assessments
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-lightbulb text-warning me-2"></i>
+                                <strong>Tip:</strong> Set up the next year in advance
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-lightbulb text-warning me-2"></i>
+                                <strong>Tip:</strong> End date should be after start date
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-lightbulb text-warning me-2"></i>
+                                <strong>Tip:</strong> You can change the current year later
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Set current year as default if no value provided
+    if (!$('#year').val()) {
+        $('#year').val(new Date().getFullYear());
+    }
+
+    // Set default dates based on academic year
+    function setDefaultDates() {
+        const year = $('#year').val();
+        if (year) {
+            const startDate = `${year}-01-01`;
+            const endDate = `${year}-12-31`;
+
+            if (!$('#start_date').val()) {
+                $('#start_date').val(startDate);
+            }
+            if (!$('#end_date').val()) {
+                $('#end_date').val(endDate);
+            }
+        }
+        updatePreview();
+    }
+
+    // Update preview when form changes
+    function updatePreview() {
+        const year = $('#year').val();
+        const startDate = $('#start_date').val();
+        const endDate = $('#end_date').val();
+        const isCurrent = $('#is_current').is(':checked');
+
+        if (year && startDate && endDate) {
+            $('#yearPreview').show();
+
+            // Format year display
+            $('#previewYear').text(year);
+
+            // Calculate duration
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const months = Math.round(diffDays / 30);
+            $('#previewDuration').text(`${diffDays} days (~${months} months)`);
+
+            // Status
+            $('#previewStatus').html(isCurrent ?
+                '<span class="badge bg-success">Current Year</span>' :
+                '<span class="badge bg-secondary">Inactive</span>'
+            );
+        } else {
+            $('#yearPreview').hide();
+        }
+    }
+
+    // Form validation
+    function validateForm() {
+        let isValid = true;
+        const year = parseInt($('#year').val());
+        const startDate = new Date($('#start_date').val());
+        const endDate = new Date($('#end_date').val());
+        const currentYear = new Date().getFullYear();
+
+        // Clear previous errors
+        $('.form-control').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+
+        // Validate year
+        if (year < 2020 || year > 2030) {
+            $('#year').addClass('is-invalid');
+            $('#yearError').text('Year must be between 2020 and 2030');
+            isValid = false;
+        } else if (year < currentYear - 2) {
+            $('#year').addClass('is-invalid');
+            $('#yearError').text('Academic year seems too far in the past');
+            isValid = false;
+        } else if (year > currentYear + 2) {
+            $('#year').addClass('is-invalid');
+            $('#yearError').text('Academic year seems too far in the future');
+            isValid = false;
+        }
+
+        // Validate date range
+        if (endDate <= startDate) {
+            $('#end_date').addClass('is-invalid');
+            isValid = false;
+
+            // Show toast notification
+            showToast('Invalid Date Range', 'End date must be after start date', 'error');
+        }
+
+        // Validate reasonable duration (between 6 months and 18 months)
+        const diffTime = endDate - startDate;
+        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
+
+        if (diffMonths < 6) {
+            $('#end_date').addClass('is-invalid');
+            showToast('Duration Too Short', 'Academic year should be at least 6 months', 'warning');
+            isValid = false;
+        } else if (diffMonths > 18) {
+            $('#end_date').addClass('is-invalid');
+            showToast('Duration Too Long', 'Academic year should not exceed 18 months', 'warning');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    // Toast notification helper
+    function showToast(title, message, type) {
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}:</strong> ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        // Create toast container if it doesn't exist
+        if (!$('#toastContainer').length) {
+            $('body').append('<div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>');
+        }
+
+        const $toast = $(toastHtml);
+        $('#toastContainer').append($toast);
+
+        const toast = new bootstrap.Toast($toast[0]);
+        toast.show();
+
+        // Remove after hiding
+        $toast.on('hidden.bs.toast', function() {
+            $(this).remove();
+        });
+    }
+
+    // Event handlers
+    $('#year').on('input change', function() {
+        setDefaultDates();
+    });
+
+    $('#start_date, #end_date, #is_current').on('change', function() {
+        updatePreview();
+    });
+
+    // Form submission
+    $('#academicYearForm').on('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Show loading state
+        const $submitBtn = $('#submitBtn');
+        const originalText = $submitBtn.html();
+        $submitBtn.html('<i class="fas fa-spinner fa-spin me-2"></i>Creating...').prop('disabled', true);
+
+        // Re-enable button after timeout as failsafe
+        setTimeout(function() {
+            $submitBtn.html(originalText).prop('disabled', false);
+        }, 10000);
+    });
+
+    // Confirm current year change
+    $('#is_current').on('change', function() {
+        if ($(this).is(':checked')) {
+            const confirmed = confirm(
+                'Setting this as the current academic year will deactivate any other current academic year. ' +
+                'This affects fee assessments and student promotions. Are you sure?'
+            );
+
+            if (!confirmed) {
+                $(this).prop('checked', false);
+                updatePreview();
+            }
+        }
+    });
+
+    // Initialize
+    setDefaultDates();
+
+    // Auto-focus on year field
+    $('#year').focus();
+
+    // Add smooth animations
+    $('.form-control').on('focus', function() {
+        $(this).parent().addClass('focused');
+    }).on('blur', function() {
+        $(this).parent().removeClass('focused');
+    });
+});
+
+// Additional CSS for focus animations
+const style = document.createElement('style');
+style.textContent = `
+    .focused {
+        transform: translateY(-2px);
+        transition: transform 0.2s ease;
+    }
+
+    .required::after {
+        content: ' *';
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

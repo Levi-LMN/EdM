@@ -1,0 +1,422 @@
+<!-- templates/fees/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Fee Management - EduManage Pro{% endblock %}
+{% block page_title %}Fee Setup & Management{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('add_fee_item') }}" class="btn btn-outline-primary">
+        <i class="fas fa-plus me-2"></i>New Fee Item
+    </a>
+    <a href="{{ url_for('assess_fees') }}" class="btn btn-primary">
+        <i class="fas fa-calculator me-2"></i>Assess Fees
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Term/Year Selector -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-auto">
+                <label class="form-label mb-1"><strong>Viewing Rates For:</strong></label>
+            </div>
+            <div class="col-auto">
+                <select class="form-select" name="term" onchange="this.form.submit()">
+                    <option value="1" {% if request.args.get('term', 1)|int == 1 %}selected{% endif %}>Term 1</option>
+                    <option value="2" {% if request.args.get('term', 1)|int == 2 %}selected{% endif %}>Term 2</option>
+                    <option value="3" {% if request.args.get('term', 1)|int == 3 %}selected{% endif %}>Term 3</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select class="form-select" name="year" onchange="this.form.submit()">
+                    {% for y in range(2023, 2028) %}
+                    <option value="{{ y }}" {% if request.args.get('year', current_year.year if current_year else 2025)|int == y %}selected{% endif %}>
+                        {{ y }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto ms-auto">
+                <a href="{{ url_for('add_fee_rate') }}?term={{ request.args.get('term', 1) }}&year={{ request.args.get('year', current_year.year if current_year else 2025) }}"
+                   class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Add Rate for This Term
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% set term = request.args.get('term', 1)|int %}
+{% set year = request.args.get('year', current_year.year if current_year else 2025)|int %}
+
+<!-- DEBUG: Troubleshooting Section -->
+<!--<div class="card mb-4 border-warning">-->
+<!--    <div class="card-header bg-warning bg-opacity-10">-->
+<!--        <div class="d-flex justify-content-between align-items-center">-->
+<!--            <h6 class="mb-0">-->
+<!--                <i class="fas fa-bug me-2"></i>DEBUG: Transport Troubleshooting-->
+<!--            </h6>-->
+<!--            <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('debugSection').classList.toggle('d-none')">-->
+<!--                Toggle Details-->
+<!--            </button>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    <div class="card-body" id="debugSection">-->
+<!--        <div class="row">-->
+<!--            <div class="col-md-6">-->
+<!--                <h6 class="text-muted mb-3">Students with Vehicles:</h6>-->
+<!--                {% set students_with_vehicles = namespace(count=0, list=[]) %}-->
+<!--                {% for cls in classes %}-->
+<!--                    {% for student in cls.students %}-->
+<!--                        {% if student.is_active and student.vehicle_id %}-->
+<!--                            {% set students_with_vehicles.count = students_with_vehicles.count + 1 %}-->
+<!--                            {% set _ = students_with_vehicles.list.append(student) %}-->
+<!--                        {% endif %}-->
+<!--                    {% endfor %}-->
+<!--                {% endfor %}-->
+
+<!--                <div class="alert alert-info">-->
+<!--                    <strong>Total Students with Vehicles:</strong> {{ students_with_vehicles.count }}-->
+<!--                </div>-->
+
+<!--                {% if students_with_vehicles.count > 0 %}-->
+<!--                    <table class="table table-sm">-->
+<!--                        <thead>-->
+<!--                            <tr>-->
+<!--                                <th>Admission No</th>-->
+<!--                                <th>Name</th>-->
+<!--                                <th>Class</th>-->
+<!--                                <th>Vehicle ID</th>-->
+<!--                                <th>Distance</th>-->
+<!--                            </tr>-->
+<!--                        </thead>-->
+<!--                        <tbody>-->
+<!--                            {% for student in students_with_vehicles.list %}-->
+<!--                            <tr>-->
+<!--                                <td>{{ student.admission_no }}</td>-->
+<!--                                <td>{{ student.full_name }}</td>-->
+<!--                                <td>{{ student.class_obj.name }}{% if student.stream %}-{{ student.stream.name }}{% endif %}</td>-->
+<!--                                <td>{{ student.vehicle_id }}</td>-->
+<!--                                <td>{{ student.transport_distance_km or 'Not set' }}</td>-->
+<!--                            </tr>-->
+<!--                            {% endfor %}-->
+<!--                        </tbody>-->
+<!--                    </table>-->
+<!--                {% else %}-->
+<!--                    <p class="text-danger"><strong>No students found with vehicle assignments!</strong></p>-->
+<!--                {% endif %}-->
+<!--            </div>-->
+
+<!--            <div class="col-md-6">-->
+<!--                <h6 class="text-muted mb-3">All Classes & Student Counts:</h6>-->
+<!--                <table class="table table-sm">-->
+<!--                    <thead>-->
+<!--                        <tr>-->
+<!--                            <th>Class</th>-->
+<!--                            <th>Total Students</th>-->
+<!--                            <th>Active Students</th>-->
+<!--                            <th>With Vehicles</th>-->
+<!--                        </tr>-->
+<!--                    </thead>-->
+<!--                    <tbody>-->
+<!--                        {% for cls in classes %}-->
+<!--                        <tr>-->
+<!--                            <td><strong>{{ cls.name }}</strong></td>-->
+<!--                            <td>{{ cls.students|length }}</td>-->
+<!--                            <td>{{ cls.students|selectattr('is_active', 'equalto', True)|list|length }}</td>-->
+<!--                            <td>-->
+<!--                                {% set with_vehicle = namespace(count=0) %}-->
+<!--                                {% for student in cls.students %}-->
+<!--                                    {% if student.is_active and student.vehicle_id %}-->
+<!--                                        {% set with_vehicle.count = with_vehicle.count + 1 %}-->
+<!--                                    {% endif %}-->
+<!--                                {% endfor %}-->
+<!--                                {{ with_vehicle.count }}-->
+<!--                            </td>-->
+<!--                        </tr>-->
+<!--                        {% endfor %}-->
+<!--                    </tbody>-->
+<!--                </table>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!-- Coverage Summary Alert -->
+<div class="alert alert-info">
+    <div class="row">
+        <div class="col-md-8">
+            <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Fee Coverage for Term {{ term }}/{{ year }}</h6>
+            <div class="row g-2">
+                {% set total_students = namespace(count=0, covered=0) %}
+                {% for cls in classes %}
+                    {% set class_students = cls.students|selectattr('is_active', 'equalto', True)|list|length %}
+                    {% set total_students.count = total_students.count + class_students %}
+
+                    {% set class_has_rate = current_rates|selectattr('class_id', 'equalto', cls.id)|list|length > 0 %}
+                    {% if class_has_rate %}
+                        {% set total_students.covered = total_students.covered + class_students %}
+                    {% endif %}
+                {% endfor %}
+
+                <div class="col-auto">
+                    <strong>{{ total_students.count }}</strong> active students
+                </div>
+                <div class="col-auto">
+                    <strong>{{ total_students.covered }}</strong> covered by rates
+                    {% if total_students.count > 0 %}
+                        ({{ ((total_students.covered / total_students.count) * 100)|round|int }}%)
+                    {% endif %}
+                </div>
+                {% if total_students.count > total_students.covered %}
+                <div class="col-auto text-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <strong>{{ total_students.count - total_students.covered }}</strong> students lack fee rates
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-primary btn-sm" onclick="showCoverageDetails()">
+                <i class="fas fa-chart-bar me-1"></i>View Details
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Fee Items with Rates -->
+{% for fee_item in fee_items %}
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">
+                <i class="fas fa-tag me-2"></i>{{ fee_item.name }}
+                <span class="badge bg-secondary ms-2">{{ fee_item.code }}</span>
+                {% if fee_item.is_per_km %}
+                <span class="badge bg-info ms-1">Per KM</span>
+                {% endif %}
+            </h5>
+            <small class="text-muted">
+                Scope:
+                {% if fee_item.scope.value == 'UNIVERSAL' %}
+                    <span class="badge bg-success">All Students</span>
+                {% elif fee_item.scope.value == 'CLASS_LEVEL' %}
+                    <span class="badge bg-primary">Class-Specific</span>
+                {% elif fee_item.scope.value == 'STREAM_LEVEL' %}
+                    <span class="badge bg-warning">Stream-Specific</span>
+                {% else %}
+                    <span class="badge bg-secondary">Individual Assignment</span>
+                {% endif %}
+            </small>
+        </div>
+        <div>
+            {% if not fee_item.is_active %}
+            <span class="badge bg-danger me-2">Inactive</span>
+            {% endif %}
+            <a href="{{ url_for('edit_fee_item', item_id=fee_item.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-edit"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        {% set item_rates = current_rates|selectattr('fee_item_id', 'equalto', fee_item.id)|list %}
+
+        {% if item_rates %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Applies To</th>
+                            <th>Student Type</th>
+                            <th>Amount</th>
+                            <th>Students Affected</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in item_rates %}
+                        <tr>
+                            <td>
+                                {% if rate.stream %}
+                                    <strong>{{ rate.class_obj.name }}-{{ rate.stream.name }}</strong>
+                                {% elif rate.class_obj %}
+                                    <strong>{{ rate.class_obj.name }}</strong> (All Streams)
+                                {% else %}
+                                    <strong>All Classes</strong>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if rate.student_type %}
+                                    <span class="badge bg-info">{{ rate.student_type.value }}</span>
+                                {% else %}
+                                    <span class="text-muted">All Types</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if rate.amount %}
+                                    <strong class="text-success">KSh {{ "{:,.2f}".format(rate.amount) }}</strong>
+                                {% elif rate.rate_per_km %}
+                                    <strong class="text-primary">KSh {{ "{:,.2f}".format(rate.rate_per_km) }}</strong>/km
+                                {% endif %}
+                            </td>
+                            <td>
+                                {# For transport fees, ALWAYS count students with vehicles regardless of rate scope #}
+                                {% if fee_item.code == 'TRANSPORT' %}
+                                    {% set transport_count = namespace(value=0) %}
+                                    {# Count ALL students with vehicles across all classes #}
+                                    {% for cls in classes %}
+                                        {% for student in cls.students %}
+                                            {% if student.is_active and student.vehicle_id %}
+                                                {% set transport_count.value = transport_count.value + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    <span class="badge bg-secondary">{{ transport_count.value }} students</span>
+                                    <br><small class="text-muted">({{ transport_count.value }} use transport)</small>
+                                {% else %}
+                                    {# For non-transport fees, count based on rate scope #}
+                                    {% set affected_count = 0 %}
+                                    {% if rate.stream %}
+                                        {% set affected_count = rate.stream.students|selectattr('is_active', 'equalto', True)|list|length %}
+                                    {% elif rate.class_obj %}
+                                        {% set affected_count = rate.class_obj.students|selectattr('is_active', 'equalto', True)|list|length %}
+                                    {% else %}
+                                        {% for cls in classes %}
+                                            {% set affected_count = affected_count + cls.students|selectattr('is_active', 'equalto', True)|list|length %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    <span class="badge bg-secondary">{{ affected_count }} students</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if rate.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('edit_fee_rate', rate_id=rate.id) }}"
+                                       class="btn btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('delete_fee_rate', rate_id=rate.id) }}"
+                                          class="d-inline" onsubmit="return confirm('Delete this rate?')">
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No rates configured for <strong>{{ fee_item.name }}</strong> in Term {{ term }}/{{ year }}.
+
+                {# Show potential affected students even without rates #}
+                {% if fee_item.code == 'TRANSPORT' %}
+                    {% set transport_students = namespace(count=0) %}
+                    {% for cls in classes %}
+                        {% for student in cls.students %}
+                            {% if student.is_active and student.vehicle_id %}
+                                {% set transport_students.count = transport_students.count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    {% if transport_students.count > 0 %}
+                        <br><span class="badge bg-info mt-2">{{ transport_students.count }} students using transport would be affected</span>
+                    {% endif %}
+                {% endif %}
+
+                <br>
+                <a href="{{ url_for('add_fee_rate') }}?fee_item_id={{ fee_item.id }}&term={{ term }}&year={{ year }}"
+                   class="alert-link">Add a rate now</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<!-- Coverage Details Modal -->
+<div class="modal fade" id="coverageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Fee Coverage Details - Term {{ term }}/{{ year }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Class/Stream</th>
+                            <th>Active Students</th>
+                            <th>Fee Items Configured</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cls in classes %}
+                            {% set class_students = cls.students|selectattr('is_active', 'equalto', True)|list %}
+                            {% set class_rates = current_rates|selectattr('class_id', 'equalto', cls.id)|list %}
+                            {% set universal_rates = current_rates|selectattr('class_id', 'equalto', None)|selectattr('stream_id', 'equalto', None)|list %}
+
+                            <tr>
+                                <td><strong>{{ cls.name }}</strong></td>
+                                <td>{{ class_students|length }}</td>
+                                <td>
+                                    {{ class_rates|length + universal_rates|length }} fee items
+                                </td>
+                                <td>
+                                    {% if (class_rates|length + universal_rates|length) > 0 %}
+                                        <span class="badge bg-success">Covered</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">No Rates</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            {% for stream in cls.streams %}
+                                {% set stream_students = stream.students|selectattr('is_active', 'equalto', True)|list %}
+                                {% set stream_rates = current_rates|selectattr('stream_id', 'equalto', stream.id)|list %}
+                                <tr>
+                                    <td class="ps-4">└ {{ stream.name }}</td>
+                                    <td>{{ stream_students|length }}</td>
+                                    <td>{{ stream_rates|length + class_rates|length + universal_rates|length }} fee items</td>
+                                    <td>
+                                        {% if (stream_rates|length + class_rates|length + universal_rates|length) > 0 %}
+                                            <span class="badge bg-success">Covered</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">No Rates</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showCoverageDetails() {
+    const modal = new bootstrap.Modal(document.getElementById('coverageModal'));
+    modal.show();
+}
+</script>
+
+{% endblock %}

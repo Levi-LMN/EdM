@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block page_title %}Class Summary Report{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Reports
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Class Fee Summary</h5>
+    </div>
+    <div class="card-body">
+        <!-- Filters -->
+        <form method="GET" class="mb-4">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Term</label>
+                    <select class="form-select" name="term">
+                        <option value="">All Terms</option>
+                        <option value="1" {{ 'selected' if term == 1 else '' }}>Term 1</option>
+                        <option value="2" {{ 'selected' if term == 2 else '' }}>Term 2</option>
+                        <option value="3" {{ 'selected' if term == 3 else '' }}>Term 3</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Year</label>
+                    <input type="number" class="form-control" name="year" value="{{ year or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Class</label>
+                    <select class="form-select" name="class_id">
+                        <option value="">All Classes</option>
+                        {% for class in classes %}
+                            <option value="{{ class.id }}" {{ 'selected' if selected_class == class.id else '' }}>
+                                {{ class.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i>Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Summary Data -->
+        {% if summary_data %}
+            {% for class_summary in summary_data %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h6 class="mb-0">{{ class_summary.class.name }}</h6>
+                            <small class="text-muted">{{ class_summary.total_students }} students</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="row text-center">
+                                <div class="col">
+                                    <small class="text-muted d-block">Assessed</small>
+                                    <strong class="text-primary">{{ class_summary.total_assessed | currency }}</strong>
+                                </div>
+                                <div class="col">
+                                    <small class="text-muted d-block">Paid</small>
+                                    <strong class="text-success">{{ class_summary.total_paid | currency }}</strong>
+                                </div>
+                                <div class="col">
+                                    <small class="text-muted d-block">Outstanding</small>
+                                    <strong class="text-danger">{{ class_summary.outstanding | currency }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if class_summary.streams %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Stream</th>
+                                        <th>Students</th>
+                                        <th>Assessed</th>
+                                        <th>Paid</th>
+                                        <th>Outstanding</th>
+                                        <th>Collection %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stream_name, stream_data in class_summary.streams.items() %}
+                                    <tr>
+                                        <td>{{ stream_name }}</td>
+                                        <td>{{ stream_data.students }}</td>
+                                        <td>{{ stream_data.assessed | currency }}</td>
+                                        <td>{{ stream_data.paid | currency }}</td>
+                                        <td class="text-danger">{{ (stream_data.assessed - stream_data.paid) | currency }}</td>
+                                        <td>
+                                            {% set collection_rate = (stream_data.paid / stream_data.assessed * 100) if stream_data.assessed > 0 else 0 %}
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-success" style="width: {{ collection_rate }}%">
+                                                    {{ "%.1f"|format(collection_rate) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+                <h4>No Data Available</h4>
+                <p class="text-muted">Please select filters to view class summary data.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMN Technologies Group</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+        }
+
+        body.light-theme {
+            background: #fafafa;
+            color: #0a0a0a;
+        }
+
+        body.light-theme .gradient-bg {
+            background: radial-gradient(circle at 20% 50%, rgba(0, 0, 0, 0.02) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.02) 0%, transparent 50%);
+        }
+
+        body.light-theme nav {
+            background: rgba(250, 250, 250, 0.95);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .card {
+            border-color: rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        body.light-theme .btn-primary {
+            background: #0a0a0a;
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        body.light-theme .btn-secondary {
+            border-color: rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            color: #0a0a0a;
+        }
+
+        body.light-theme .mobile-menu {
+            background: #fafafa;
+        }
+
+        body.light-theme .curved-section {
+            background: #fafafa;
+        }
+
+        body.light-theme .nav-link::after {
+            background: #0a0a0a;
+        }
+
+        body.light-theme .text-white\/60,
+        body.light-theme .hero-subtitle {
+            color: rgba(10, 10, 10, 0.5) !important;
+        }
+
+        body.light-theme .text-white\/70 {
+            color: rgba(10, 10, 10, 0.6) !important;
+        }
+
+        body.light-theme .text-white\/50 {
+            color: rgba(10, 10, 10, 0.45) !important;
+        }
+
+        body.light-theme .text-white\/40,
+        body.light-theme .stat-label {
+            color: rgba(10, 10, 10, 0.4) !important;
+        }
+
+        body.light-theme .text-white\/30 {
+            color: rgba(10, 10, 10, 0.35) !important;
+        }
+
+        body.light-theme .bg-white\/10,
+        body.light-theme .icon-bg {
+            background: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        body.light-theme .border-white\/10 {
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        body.light-theme .border-white\/5 {
+            border-color: rgba(0, 0, 0, 0.06) !important;
+        }
+
+        body.light-theme .opacity-60 {
+            opacity: 0.5 !important;
+        }
+
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.light-theme .theme-toggle {
+            border-color: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .gradient-bg {
+            background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+        }
+
+        .curved-section {
+            border-radius: 80px 80px 0 0;
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .curved-section {
+                border-radius: 40px 40px 0 0;
+                margin-top: -40px;
+            }
+        }
+
+        .nav-link {
+            position: relative;
+            padding-bottom: 2px;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #fff;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 15vw, 10rem);
+            font-weight: 100;
+            line-height: 0.9;
+            letter-spacing: -0.02em;
+        }
+
+        .card {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 48px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #000;
+            border-radius: 100px;
+            box-shadow: 0 4px 24px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 100px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 100;
+            line-height: 1.1;
+        }
+
+        .mobile-menu {
+            transform: translateX(100%);
+        }
+
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                letter-spacing: -0.04em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="text-lg font-light tracking-widest">LMN <span class="text-xs opacity-60">TECHNOLOGIES GROUP</span></div>
+
+                <!-- Desktop Nav -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#home" class="nav-link text-sm">Home</a>
+                    <a href="#about" class="nav-link text-sm">About</a>
+                    <a href="#portfolio" class="nav-link text-sm">Portfolio</a>
+                    <a href="#contact" class="nav-link text-sm">Contact</a>
+                    <button id="theme-toggle" class="theme-toggle ml-2">
+                        <svg id="theme-icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <svg id="theme-icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="md:hidden">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu fixed top-0 right-0 w-full h-screen bg-black z-40 md:hidden">
+        <div class="flex flex-col items-center justify-center h-full gap-8">
+            <a href="#home" class="text-2xl font-light mobile-link">Home</a>
+            <a href="#about" class="text-2xl font-light mobile-link">About</a>
+            <a href="#portfolio" class="text-2xl font-light mobile-link">Portfolio</a>
+            <a href="#contact" class="text-2xl font-light mobile-link">Contact</a>
+            <button id="theme-toggle-mobile" class="theme-toggle mt-4">
+                <svg id="theme-icon-sun-mobile" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <svg id="theme-icon-moon-mobile" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen flex items-center justify-center px-6 pt-16">
+        <div class="max-w-7xl w-full text-center">
+            <h1 class="hero-title mb-6">LMN</h1>
+            <p class="hero-subtitle text-lg md:text-xl font-light text-white/60 max-w-2xl mx-auto mb-12">
+                Engineering tomorrow's digital ecosystem through innovation, AI, and transformative technology
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="btn-primary px-8 py-3 text-sm font-medium">
+                    Explore
+                </button>
+                <button class="btn-secondary px-8 py-3 text-sm font-medium">
+                    Portfolio
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 md:py-32 px-6 gradient-bg">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-20">
+                <div>
+                    <h2 class="section-title mb-8">
+                        Building the<br>digital future
+                    </h2>
+                    <p class="text-base md:text-lg text-white/70 leading-relaxed">
+                        We create intelligent solutions that reshape industries through cutting-edge AI, deep research, and transformative innovation.
+                    </p>
+                </div>
+
+                <div class="space-y-8">
+                    <div class="card p-6 md:p-8">
+                        <div class="icon-bg w-14 h-14 bg-white/10 rounded-3xl flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-light mb-3">Innovation</h3>
+                        <p class="text-sm text-white/60 leading-relaxed">
+                            Pioneering technologies that redefine digital transformation
+                        </p>
+                    </div>
+
+                    <div class="card p-6 md:p-8">
+                        <div class="icon-bg w-14 h-14 bg-white/10 rounded-3xl flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-light mb-3">Excellence</h3>
+                        <p class="text-sm text-white/60 leading-relaxed">
+                            Delivering quality through meticulous engineering and attention to detail
+                        </p>
+                    </div>
+
+                    <div class="card p-6 md:p-8">
+                        <div class="icon-bg w-14 h-14 bg-white/10 rounded-3xl flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-light mb-3">Impact</h3>
+                        <p class="text-sm text-white/60 leading-relaxed">
+                            Creating scalable solutions that transform industries worldwide
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="py-20 md:py-32 px-6 curved-section bg-black">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="section-title mb-4">Portfolio</h2>
+                <p class="text-white/60 max-w-2xl mx-auto">
+                    Specialized ventures driving technological evolution
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 lg:gap-12">
+                <div class="card p-8 md:p-10">
+                    <div class="icon-bg w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center mb-6">
+                        <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-light mb-4">CyphicAI</h3>
+                    <p class="text-white/70 mb-6 leading-relaxed">
+                        Next-generation AI cybersecurity platform leveraging machine learning to detect and neutralize digital threats in real-time
+                    </p>
+                    <ul class="space-y-2 mb-6 text-sm text-white/50">
+                        <li>• Quantum-enhanced threat detection</li>
+                        <li>• AI-powered behavioral analysis</li>
+                        <li>• Autonomous incident response</li>
+                    </ul>
+                    <a href="#" class="text-sm inline-flex items-center gap-2">
+                        Learn more
+                        <span>→</span>
+                    </a>
+                </div>
+
+                <div class="card p-8 md:p-10">
+                    <div class="icon-bg w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center mb-6">
+                        <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-light mb-4">MobilityX</h3>
+                    <p class="text-white/70 mb-6 leading-relaxed">
+                        Urban intelligence platform transforming city mobility through predictive analytics and real-time optimization
+                    </p>
+                    <ul class="space-y-2 mb-6 text-sm text-white/50">
+                        <li>• Predictive traffic analytics</li>
+                        <li>• Dynamic route optimization</li>
+                        <li>• Smart city integration</li>
+                    </ul>
+                    <a href="#" class="text-sm inline-flex items-center gap-2">
+                        Learn more
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-20 md:py-32 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+                <div class="text-center">
+                    <div class="text-4xl md:text-6xl font-extralight mb-2">50+</div>
+                    <div class="stat-label text-xs md:text-sm text-white/40 tracking-wider">PATENTS</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-6xl font-extralight mb-2">500+</div>
+                    <div class="stat-label text-xs md:text-sm text-white/40 tracking-wider">CLIENTS</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-6xl font-extralight mb-2">24/7</div>
+                    <div class="stat-label text-xs md:text-sm text-white/40 tracking-wider">SUPPORT</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-6xl font-extralight mb-2">99.9%</div>
+                    <div class="stat-label text-xs md:text-sm text-white/40 tracking-wider">UPTIME</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 md:py-32 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="section-title mb-6">Let's build<br>the future</h2>
+            <p class="text-lg text-white/60 mb-12 max-w-2xl mx-auto">
+                Transform your vision into reality with cutting-edge solutions
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="btn-primary px-10 py-4 text-sm font-medium">
+                    Get Started
+                </button>
+                <button class="btn-secondary px-10 py-4 text-sm font-medium">
+                    Schedule Demo
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-12 md:py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-12">
+                <div class="col-span-2 md:col-span-1">
+                    <div class="text-lg font-light tracking-widest mb-4">LMN <span class="text-xs opacity-60">TECHNOLOGIES</span></div>
+                    <p class="text-sm text-white/40 leading-relaxed">
+                        Pioneering AI and digital transformation
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium mb-4">Portfolio</h4>
+                    <div class="space-y-2 text-sm text-white/40">
+                        <a href="#" class="block">CyphicAI</a>
+                        <a href="#" class="block">MobilityX</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium mb-4">Solutions</h4>
+                    <div class="space-y-2 text-sm text-white/40">
+                        <a href="#" class="block">AI Consulting</a>
+                        <a href="#" class="block">Development</a>
+                        <a href="#" class="block">Support</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium mb-4">Connect</h4>
+                    <div class="space-y-2 text-sm text-white/40">
+                        <a href="#" class="block">LinkedIn</a>
+                        <a href="#" class="block">Twitter</a>
+                        <a href="#" class="block">Contact</a>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-white/10 text-center text-xs text-white/30">
+                © 2025 LMN Technologies Group
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                    document.getElementById('mobile-menu').classList.remove('open');
+                }
+            });
+        });
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('open');
+        });
+
+        document.querySelectorAll('.mobile-link').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+            });
+        });
+
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeToggleMobile = document.getElementById('theme-toggle-mobile');
+        const body = document.body;
+        const moonIcon = document.getElementById('theme-icon-moon');
+        const sunIcon = document.getElementById('theme-icon-sun');
+        const moonIconMobile = document.getElementById('theme-icon-moon-mobile');
+        const sunIconMobile = document.getElementById('theme-icon-sun-mobile');
+
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        if (currentTheme === 'light') {
+            body.classList.add('light-theme');
+            moonIcon.classList.add('hidden');
+            sunIcon.classList.remove('hidden');
+            moonIconMobile.classList.add('hidden');
+            sunIconMobile.classList.remove('hidden');
+        }
+
+        function toggleTheme() {
+            body.classList.toggle('light-theme');
+            const isLight = body.classList.contains('light-theme');
+
+            moonIcon.classList.toggle('hidden');
+            sunIcon.classList.toggle('hidden');
+            moonIconMobile.classList.toggle('hidden');
+            sunIconMobile.classList.toggle('hidden');
+
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+        themeToggleMobile.addEventListener('click', toggleTheme);
+    </script>
+</body>
+</html>

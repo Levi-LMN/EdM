@@ -1,0 +1,436 @@
+<!-- fees/assess.html -->
+{% extends "base.html" %}
+
+{% block title %}Assess Fees - EduManage Pro{% endblock %}
+{% block page_title %}Assess Student Fees{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('fee_management') }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Fee Management
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>Generate Fee Assessments
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="assessmentForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="term" class="form-label">Term *</label>
+                                <select class="form-select" id="term" name="term" required>
+                                    <option value="1">Term 1</option>
+                                    <option value="2">Term 2</option>
+                                    <option value="3">Term 3</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="year" class="form-label">Year *</label>
+                                <input type="number" class="form-control" id="year" name="year"
+                                       value="{{ current_year.year if current_year }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assessment Scope Selection -->
+                    <div class="form-group mb-3">
+                        <label class="form-label">Assessment Scope *</label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="assessment_scope"
+                                           id="scope_all" value="all" checked onchange="toggleScopeFields()">
+                                    <label class="form-check-label" for="scope_all">
+                                        All Students
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="assessment_scope"
+                                           id="scope_class" value="class" onchange="toggleScopeFields()">
+                                    <label class="form-check-label" for="scope_class">
+                                        By Class
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="assessment_scope"
+                                           id="scope_stream" value="stream" onchange="toggleScopeFields()">
+                                    <label class="form-check-label" for="scope_stream">
+                                        By Stream
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="assessment_scope"
+                                           id="scope_individual" value="individual" onchange="toggleScopeFields()">
+                                    <label class="form-check-label" for="scope_individual">
+                                        Individual Student
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Class/Stream/Student Selection -->
+                    <div id="classSelection" class="form-group mb-3" style="display: none;">
+                        <label for="class_id" class="form-label">Select Class *</label>
+                        <select class="form-select" id="class_id" name="class_id" onchange="loadStreams(this.value)">
+                            <option value="">Select Class</option>
+                            {% for cls in classes %}
+                            <option value="{{ cls.id }}">{{ cls.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="streamSelection" class="form-group mb-3" style="display: none;">
+                        <label for="stream_id" class="form-label">Select Stream *</label>
+                        <select class="form-select" id="stream_id" name="stream_id">
+                            <option value="">Select Stream</option>
+                        </select>
+                    </div>
+
+                    <div id="studentSelection" class="form-group mb-3" style="display: none;">
+                        <label for="student_id" class="form-label">Search Student *</label>
+                        <input type="text" class="form-control" id="student_search"
+                               placeholder="Type admission number or name...">
+                        <input type="hidden" id="student_id" name="student_id">
+                        <div id="studentResults" class="mt-2"></div>
+                    </div>
+
+                    <!-- Assessment Options -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Assessment Options</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="skip_existing"
+                                       name="skip_existing" checked>
+                                <label class="form-check-label" for="skip_existing">
+                                    Skip students who already have assessments for this term/year
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="include_transport"
+                                       name="include_transport" checked>
+                                <label class="form-check-label" for="include_transport">
+                                    Include transport fees (for students with vehicle assignments)
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="force_regenerate"
+                                       name="force_regenerate" onchange="toggleForceRegenerateWarning()">
+                                <label class="form-check-label" for="force_regenerate">
+                                    <strong class="text-danger">Force regenerate</strong> - Delete and recreate existing assessments
+                                </label>
+                                <small class="text-muted d-block">Use this to update assessments if rates have changed</small>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="dry_run"
+                                       name="dry_run">
+                                <label class="form-check-label" for="dry_run">
+                                    Dry run (preview only - don't create actual assessments)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Force Regenerate Warning -->
+                    <div id="forceRegenerateWarning" class="alert alert-warning" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Warning: Force Regenerate Enabled</h6>
+                        <p class="mb-0">This will delete and recreate all assessments for the selected students in this term/year.
+                        Any payment allocations linked to deleted assessments will also be removed. Use with caution!</p>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div id="previewSection" class="card mb-3" style="display: none;">
+                        <div class="card-header">
+                            <h6 class="mb-0">Preview Assessment</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="previewContent">
+                                <!-- Preview content will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Assessment Process</h6>
+                        <ul class="mb-0">
+                            <li>Fee assessments will be generated based on active fee rates and student assignments</li>
+                            <li>Existing assessments for the same term/year will be skipped by default</li>
+                            <li>Transport fees are calculated based on student's assigned vehicle and distance</li>
+                            <li>Use "Preview" to see what will be assessed before creating actual records</li>
+                            <li>Use "Force regenerate" if you need to update assessments after changing rates</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('fee_management') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="button" class="btn btn-outline-primary" onclick="previewAssessment()">
+                            <i class="fas fa-eye me-2"></i>Preview
+                        </button>
+                        <button type="submit" class="btn btn-primary" onclick="return confirmAssessment()">
+                            <i class="fas fa-cogs me-2"></i>Generate Assessments
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleScopeFields() {
+    const scope = document.querySelector('input[name="assessment_scope"]:checked').value;
+
+    // Hide all selection fields
+    document.getElementById('classSelection').style.display = 'none';
+    document.getElementById('streamSelection').style.display = 'none';
+    document.getElementById('studentSelection').style.display = 'none';
+
+    // Clear selections
+    document.getElementById('class_id').value = '';
+    document.getElementById('stream_id').innerHTML = '<option value="">Select Stream</option>';
+    document.getElementById('student_id').value = '';
+    document.getElementById('student_search').value = '';
+    document.getElementById('studentResults').innerHTML = '';
+
+    // Show relevant fields based on scope
+    if (scope === 'class' || scope === 'stream') {
+        document.getElementById('classSelection').style.display = 'block';
+        if (scope === 'stream') {
+            document.getElementById('streamSelection').style.display = 'block';
+        }
+    } else if (scope === 'individual') {
+        document.getElementById('studentSelection').style.display = 'block';
+    }
+}
+
+function toggleForceRegenerateWarning() {
+    const forceRegenerate = document.getElementById('force_regenerate').checked;
+    const warningDiv = document.getElementById('forceRegenerateWarning');
+
+    if (forceRegenerate) {
+        warningDiv.style.display = 'block';
+        document.getElementById('skip_existing').checked = false;
+        document.getElementById('skip_existing').disabled = true;
+    } else {
+        warningDiv.style.display = 'none';
+        document.getElementById('skip_existing').disabled = false;
+        document.getElementById('skip_existing').checked = true;
+    }
+}
+
+function loadStreams(classId) {
+    const streamSelect = document.getElementById('stream_id');
+    streamSelect.innerHTML = '<option value="">Loading...</option>';
+
+    if (!classId) {
+        streamSelect.innerHTML = '<option value="">Select Stream</option>';
+        return;
+    }
+
+    fetch(`/api/streams/${classId}`)
+        .then(response => response.json())
+        .then(streams => {
+            streamSelect.innerHTML = '<option value="">Select Stream</option>';
+            streams.forEach(stream => {
+                streamSelect.innerHTML += `<option value="${stream.id}">${stream.name}</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('Error loading streams:', error);
+            streamSelect.innerHTML = '<option value="">Error loading streams</option>';
+        });
+}
+
+// Student search functionality
+let searchTimeout;
+document.getElementById('student_search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+
+    if (query.length < 2) {
+        document.getElementById('studentResults').innerHTML = '';
+        document.getElementById('student_id').value = '';
+        return;
+    }
+
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/student_search?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(students => {
+                const resultsDiv = document.getElementById('studentResults');
+
+                if (students.length === 0) {
+                    resultsDiv.innerHTML = '<div class="alert alert-warning">No students found</div>';
+                    return;
+                }
+
+                let html = '<div class="list-group">';
+                students.forEach(student => {
+                    html += `<button type="button" class="list-group-item list-group-item-action"
+                             onclick="selectStudent(${student.id}, '${student.admission_no}', '${student.name}')">
+                             <strong>${student.admission_no}</strong> - ${student.name} (${student.class})
+                           </button>`;
+                });
+                html += '</div>';
+
+                resultsDiv.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error searching students:', error);
+                document.getElementById('studentResults').innerHTML =
+                    '<div class="alert alert-danger">Error searching students</div>';
+            });
+    }, 300);
+});
+
+function selectStudent(id, admissionNo, name) {
+    document.getElementById('student_id').value = id;
+    document.getElementById('student_search').value = `${admissionNo} - ${name}`;
+    document.getElementById('studentResults').innerHTML = '';
+}
+
+function previewAssessment() {
+    const form = document.getElementById('assessmentForm');
+    const formData = new FormData(form);
+    formData.append('preview', '1');
+
+    document.getElementById('previewContent').innerHTML =
+        '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading preview...</div>';
+    document.getElementById('previewSection').style.display = 'block';
+
+    fetch('/fees/assess', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayPreview(data.data);
+        } else {
+            document.getElementById('previewContent').innerHTML =
+                `<div class="alert alert-danger">Preview Error: ${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Preview error:', error);
+        document.getElementById('previewContent').innerHTML =
+            '<div class="alert alert-danger">Error loading preview</div>';
+    });
+}
+
+function displayPreview(data) {
+    let html = `
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h5>${data.students_count}</h5>
+                        <small>Target Students</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h5>${data.assessments_count}</h5>
+                        <small>New Assessments</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h5>${data.skipped_count}</h5>
+                        <small>Skipped (Existing)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5>${data.total_amount}</h5>
+                        <small>Total Amount</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (data.fee_breakdown.length > 0) {
+        html += `
+            <div class="mt-3">
+                <h6>Fee Breakdown</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fee Type</th>
+                                <th>Students</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+
+        data.fee_breakdown.forEach(fee => {
+            html += `
+                <tr>
+                    <td><strong>${fee.name}</strong> (${fee.code})</td>
+                    <td>${fee.students_count}</td>
+                    <td>${fee.amount}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    if (data.warnings.length > 0) {
+        html += '<div class="mt-3"><h6>Warnings</h6>';
+        data.warnings.forEach(warning => {
+            html += `<div class="alert alert-warning">${warning}</div>`;
+        });
+        html += '</div>';
+    }
+
+    document.getElementById('previewContent').innerHTML = html;
+}
+
+function confirmAssessment() {
+    const dryRun = document.getElementById('dry_run').checked;
+    const forceRegenerate = document.getElementById('force_regenerate').checked;
+
+    if (dryRun) {
+        return confirm('This is a dry run - no actual assessments will be created. Continue?');
+    }
+
+    if (forceRegenerate) {
+        return confirm('WARNING: This will DELETE and RECREATE all assessments for the selected students!\n\nAny payment allocations linked to these assessments will be lost.\n\nAre you absolutely sure you want to continue?');
+    }
+
+    return confirm('Generate fee assessments? This action cannot be easily undone.');
+}
+</script>
+{% endblock %}

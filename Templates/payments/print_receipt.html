@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt {{ payment.receipt_number }}</title>
+    <style>
+        @page {
+            size: A5;
+            margin: 10mm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.3;
+            color: #000;
+        }
+
+        .receipt {
+            width: 100%;
+            max-width: 148mm;
+            margin: 0 auto;
+            padding: 10mm;
+            border: 2px solid #000;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            flex-shrink: 0;
+            border: 3px solid #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .school-info {
+            flex: 1;
+            text-align: center;
+        }
+
+        .school-info h1 {
+            font-size: 18pt;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .school-info p {
+            font-size: 10pt;
+            margin: 2px 0;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+        }
+
+        .receipt-details {
+            margin: 15px 0;
+        }
+
+        .receipt-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .receipt-details td {
+            padding: 5px;
+            font-size: 10pt;
+        }
+
+        .receipt-details .label {
+            font-weight: bold;
+            width: 30%;
+        }
+
+        .amount-words {
+            margin: 15px 0;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        .fee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .fee-table th,
+        .fee-table td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            font-size: 10pt;
+            text-align: left;
+        }
+
+        .fee-table th {
+            background: #e0e0e0;
+            font-weight: bold;
+        }
+
+        .fee-table .amount-col {
+            text-align: right;
+            width: 25%;
+        }
+
+        .fee-table .total-row {
+            background: #e0e0e0;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 20px;
+        }
+
+        .footer-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 10pt;
+        }
+
+        .footer-details .left,
+        .footer-details .right {
+            flex: 1;
+        }
+
+        .footer-details .right {
+            text-align: right;
+        }
+
+        .footer-details p {
+            margin: 3px 0;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 9pt;
+            padding-top: 10px;
+            border-top: 1px solid #000;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body onload="window.print();">
+    <div class="receipt">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <span class="logo-text">SLM</span>
+            </div>
+            <div class="school-info">
+                <h1>ST LUKE MOGOBICH ACADEMY</h1>
+                <p>P.O. BOX 1234-00100, Nairobi.</p>
+                <p>Tel: 0706 950 210 / 0701 693 009</p>
+                <p>Email: stlukemogobich@gmail.com</p>
+                <p><strong>Chokaa- Utawala Road</strong></p>
+            </div>
+        </div>
+
+        <!-- Title -->
+        <div class="title">OFFICIAL RECEIPT</div>
+
+        <!-- Receipt Details -->
+        <div class="receipt-details">
+            <table>
+                <tr>
+                    <td class="label">Receipt No:</td>
+                    <td>{{ payment.receipt_number }}</td>
+                    <td class="label">Rect Date:</td>
+                    <td>{{ payment.payment_date.strftime('%d.%B.%Y') }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Received From:</td>
+                    <td colspan="3"><strong>{{ payment.student.full_name|upper }}</strong></td>
+                </tr>
+                <tr>
+                    <td class="label">ADM NO:</td>
+                    <td>{{ payment.student.admission_no }}</td>
+                    <td class="label">Class:</td>
+                    <td>{{ payment.student.class_obj.name }}{% if payment.student.stream %} {{ payment.student.stream.name }}{% endif %}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Amount in Words -->
+        <div class="amount-words">
+            Amount.. {{ amount_to_words(payment.amount) }} Shillings
+        </div>
+
+        <!-- Fee Breakdown Table -->
+        <table class="fee-table">
+            <thead>
+                <tr>
+                    <th>VOTEHEAD</th>
+                    <th class="amount-col">AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if payment.allocations %}
+                    {% for allocation in payment.allocations %}
+                    <tr>
+                        <td>{{ allocation.assessment.fee_item.name|upper }}</td>
+                        <td class="amount-col">{{ "%.2f"|format(allocation.amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td>UNALLOCATED PAYMENT</td>
+                        <td class="amount-col">{{ "%.2f"|format(payment.amount) }}</td>
+                    </tr>
+                {% endif %}
+
+                <!-- Empty row for prepayments -->
+                <tr>
+                    <td>PREPAYMENTS</td>
+                    <td class="amount-col">0.00</td>
+                </tr>
+
+                <!-- Fees Arrears -->
+                {% set total_assessed = payment.student.fee_assessments|sum(attribute='amount') or 0 %}
+                {% set total_paid_allocations = [] %}
+                {% for assessment in payment.student.fee_assessments %}
+                    {% for alloc in assessment.allocations %}
+                        {% set _ = total_paid_allocations.append(alloc.amount) %}
+                    {% endfor %}
+                {% endfor %}
+                {% set total_paid = total_paid_allocations|sum or 0 %}
+                {% set current_balance = total_assessed - total_paid %}
+                
+                <tr class="total-row">
+                    <td>FEES ARREARS</td>
+                    <td class="amount-col">{{ "%.2f"|format(current_balance) }}</td>
+                </tr>
+
+                <!-- Total Paid -->
+                <tr class="total-row">
+                    <td>TOTAL PAID:</td>
+                    <td class="amount-col">{{ "%.2f"|format(payment.amount) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Footer Details -->
+        <div class="footer">
+            <div class="footer-details">
+                <div class="left">
+                    <p><strong>Balance:</strong> {{ "%.2f"|format(current_balance) }}</p>
+                    <p><strong>Payment Mode:</strong> {% if payment.payment_mode.value == 'BANK' %}BANK SLIP{% else %}{{ payment.payment_mode.value }}{% endif %}</p>
+                    <p><strong>Received By:</strong> {{ payment.processor.name if payment.processor else 'SYSTEM' }}</p>
+                </div>
+                <div class="right">
+                    {% if payment.payment_mode.value == 'MPESA' and payment.mpesa_code %}
+                    <p><strong>M-PESA</strong></p>
+                    <p>{{ payment.mpesa_code }}</p>
+                    {% elif payment.payment_mode.value == 'BANK' and payment.bank_slip_number %}
+                    <p><strong>CO-OP BANK</strong></p>
+                    <p>{{ payment.bank_slip_number }}</p>
+                    {% elif payment.payment_mode.value == 'CHEQUE' and payment.cheque_number %}
+                    <p><strong>CHEQUE</strong></p>
+                    <p>{{ payment.cheque_number }}</p>
+                    {% else %}
+                    <p><strong>{{ payment.payment_mode.value }}</strong></p>
+                    {% endif %}
+                    <p>{{ payment.payment_date.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+
+            <!-- Footer Note -->
+            <div class="footer-note">
+                Fees once paid is neither Refundable nor Transferrable.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

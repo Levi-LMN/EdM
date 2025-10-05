@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Promotion - EduManage Pro{% endblock %}
+
+{% block page_title %}Bulk Student Promotion{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('promotion_management') }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Promotions
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-level-up-alt me-2"></i>
+            Promote Students in Bulk
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="from_class_id" class="form-label">From Class <span class="text-danger">*</span></label>
+                        <select class="form-select" id="from_class_id" name="from_class_id" required>
+                            <option value="">Select Class</option>
+                            {% for class in classes %}
+                                <option value="{{ class.id }}">{{ class.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">All students from this class will be promoted</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="stream_id" class="form-label">From Stream (Optional)</label>
+                        <select class="form-select" id="stream_id" name="stream_id">
+                            <option value="">All Streams</option>
+                        </select>
+                        <small class="text-muted">Leave empty to promote all streams</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="academic_year" class="form-label">Academic Year <span class="text-danger">*</span></label>
+                        <input type="number"
+                               class="form-control"
+                               id="academic_year"
+                               name="academic_year"
+                               value="{{ current_year.year if current_year else '' }}"
+                               min="2020"
+                               max="2050"
+                               required>
+                        <small class="text-muted">Year for which promotion is being done</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Promotion Preview</label>
+                        <div class="alert alert-info" id="promotion-preview" style="display: none;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="preview-text">Select a class to see promotion details</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action will promote all students in the selected class/stream to their next class.
+                    Make sure you have set up the correct class progression in Academic Setup before proceeding.
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('promotion_management') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+
+                <button type="submit" class="btn btn-primary" id="promote-btn">
+                    <i class="fas fa-level-up-alt me-2"></i>Promote Students
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Student Preview Card -->
+<div class="card mt-4" id="student-preview" style="display: none;">
+    <div class="card-header">
+        <h6 class="mb-0">Students to be Promoted</h6>
+    </div>
+    <div class="card-body">
+        <div id="student-list" class="table-responsive">
+            <!-- Student list will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Load streams when class is selected
+    $('#from_class_id').change(function() {
+        const classId = $(this).val();
+
+        if (classId) {
+            // Load streams for selected class
+            $.get(`/api/streams/${classId}`)
+                .done(function(streams) {
+                    const streamSelect = $('#stream_id');
+                    streamSelect.empty().append('<option value="">All Streams</option>');
+
+                    streams.forEach(function(stream) {
+                        streamSelect.append(`<option value="${stream.id}">${stream.name}</option>`);
+                    });
+                })
+                .fail(function() {
+                    console.error('Failed to load streams');
+                });
+
+            // Show promotion preview
+            updatePromotionPreview(classId);
+            loadStudentPreview(classId, null);
+        } else {
+            $('#promotion-preview').hide();
+            $('#student-preview').hide();
+        }
+    });
+
+    // Update preview when stream changes
+    $('#stream_id').change(function() {
+        const classId = $('#from_class_id').val();
+        const streamId = $(this).val();
+
+        if (classId) {
+            loadStudentPreview(classId, streamId);
+        }
+    });
+
+    function updatePromotionPreview(classId) {
+        const className = $('#from_class_id option:selected').text();
+
+        // Find next class (simplified - in real app, get from server)
+        const classIndex = parseInt(className.match(/\d+/));
+        const nextClass = className.includes('Form') ? `Form ${classIndex + 1}` : `Grade ${classIndex + 1}`;
+
+        $('#preview-text').html(`Students from <strong>${className}</strong> will be promoted to <strong>${nextClass}</strong>`);
+        $('#promotion-preview').show();
+    }
+
+    function loadStudentPreview(classId, streamId) {
+        // Show loading state
+        $('#student-list').html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading students...</div>');
+        $('#student-preview').show();
+
+        // In a real app, this would be an API call
+        setTimeout(function() {
+            $('#student-list').html(`
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Admission No</th>
+                            <th>Student Name</th>
+                            <th>Current Stream</th>
+                            <th>Student Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Preview functionality requires API integration
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            `);
+        }, 1000);
+    }
+
+    // Confirm before submission
+    $('form').submit(function(e) {
+        const className = $('#from_class_id option:selected').text();
+        const streamName = $('#stream_id option:selected').text();
+        const scope = streamName !== 'All Streams' ? `${className} - ${streamName}` : className;
+
+        if (!confirm(`Are you sure you want to promote all students in ${scope}? This action cannot be undone.`)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block page_title %}Edit Academic Year{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ url_for('academic_management') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Academic Management
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edit Academic Year - {{ academic_year.year }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="year" class="form-label">Academic Year <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="year" name="year" 
+                               value="{{ academic_year.year }}" required min="2020" max="2050">
+                        <div class="form-text">e.g., 2024 for the 2024 academic year</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" 
+                                       value="{{ academic_year.start_date.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="end_date" class="form-label">End Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" 
+                                       value="{{ academic_year.end_date.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_current" name="is_current" 
+                                   {{ 'checked' if academic_year.is_current }}>
+                            <label class="form-check-label" for="is_current">
+                                Set as Current Academic Year
+                            </label>
+                            <div class="form-text">Only one academic year can be current at a time</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Academic Year
+                            </button>
+                            <a href="{{ url_for('academic_management') }}" class="btn btn-secondary ms-2">Cancel</a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Current academic year info -->
+                <hr class="my-4">
+                <h6>Current Information:</h6>
+                <div class="row">
+                    <div class="col">
+                        <ul class="list-unstyled">
+                            <li><strong>Year:</strong> {{ academic_year.year }}</li>
+                            <li><strong>Duration:</strong> {{ academic_year.start_date.strftime('%d/%m/%Y') }} - {{ academic_year.end_date.strftime('%d/%m/%Y') }}</li>
+                            <li><strong>Status:</strong> 
+                                {% if academic_year.is_current %}
+                                    <span class="badge bg-success">Current</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Not Current</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                {% if academic_year.is_current %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    This is currently the active academic year. Changing the "current" status will affect system-wide operations.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Validate that end date is after start date
+document.addEventListener('DOMContentLoaded', function() {
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+    
+    function validateDates() {
+        if (startDate.value && endDate.value) {
+            if (new Date(endDate.value) <= new Date(startDate.value)) {
+                endDate.setCustomValidity('End date must be after start date');
+            } else {
+                endDate.setCustomValidity('');
+            }
+        }
+    }
+    
+    startDate.addEventListener('change', validateDates);
+    endDate.addEventListener('change', validateDates);
+});
+</script>
+{% endblock %}

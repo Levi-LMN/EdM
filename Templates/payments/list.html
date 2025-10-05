@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}All Payments{% endblock %}
+
+{% block page_title %}Payment Records{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-coins fa-2x text-primary mb-2"></i>
+                    <h3 class="mb-0">
+                        {% set total_amount = payments.items|sum(attribute='amount') if payments.items else 0 %}
+                        KSh {{ "{:,.2f}".format(total_amount) }}
+                    </h3>
+                    <small class="text-muted">Total This Page</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-receipt fa-2x text-success mb-2"></i>
+                    <h3 class="mb-0">{{ payments.total }}</h3>
+                    <small class="text-muted">Total Payments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar-day fa-2x text-info mb-2"></i>
+                    <h3 class="mb-0">
+                        {% set today_payments = payments.items|selectattr('payment_date', 'equalto', today)|list|length %}
+                        {{ today_payments }}
+                    </h3>
+                    <small class="text-muted">Payments Today</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                    <h3 class="mb-0">
+                        {% set avg_amount = (total_amount / payments.items|length) if payments.items|length > 0 else 0 %}
+                        KSh {{ "{:,.0f}".format(avg_amount) }}
+                    </h3>
+                    <small class="text-muted">Average Payment</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter"></i> Search & Filter Payments
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text"
+                           name="search"
+                           class="form-control"
+                           placeholder="Receipt No, Student Name, Admission No..."
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Payment Mode</label>
+                    <select name="payment_mode" class="form-select">
+                        <option value="">All Modes</option>
+                        <option value="CASH" {% if request.args.get('payment_mode') == 'CASH' %}selected{% endif %}>Cash</option>
+                        <option value="MPESA" {% if request.args.get('payment_mode') == 'MPESA' %}selected{% endif %}>M-PESA</option>
+                        <option value="BANK" {% if request.args.get('payment_mode') == 'BANK' %}selected{% endif %}>Bank</option>
+                        <option value="CHEQUE" {% if request.args.get('payment_mode') == 'CHEQUE' %}selected{% endif %}>Cheque</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control"
+                           value="{{ request.args.get('from_date', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control"
+                           value="{{ request.args.get('to_date', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <a href="{{ url_for('payment_list') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-redo"></i> Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i> Payment Records
+                <span class="badge bg-primary">{{ payments.total }} Total</span>
+            </h5>
+            <div>
+                <button onclick="exportToExcel()" class="btn btn-sm btn-success">
+                    <i class="fas fa-file-excel"></i> Export
+                </button>
+                <button onclick="printTable()" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="paymentsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Receipt No.</th>
+                            <th>Date</th>
+                            <th>Student</th>
+                            <th>Class</th>
+                            <th>Amount</th>
+                            <th>Mode</th>
+                            <th>Reference</th>
+                            <th>Processed By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('payment_detail', payment_id=payment.id) }}"
+                                   class="text-decoration-none">
+                                    <strong>{{ payment.receipt_number }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                <small>{{ payment.payment_date.strftime('%d %b %Y') }}</small>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('student_detail', student_id=payment.student_id) }}"
+                                   class="text-decoration-none">
+                                    {{ payment.student.full_name }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ payment.student.admission_no }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ payment.student.class_obj.name }}{% if payment.student.stream %}-{{ payment.student.stream.name }}{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <strong class="text-success">KSh {{ "{:,.2f}".format(payment.amount) }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if payment.payment_mode.value == 'CASH' %}bg-success
+                                    {% elif payment.payment_mode.value == 'MPESA' %}bg-primary
+                                    {% elif payment.payment_mode.value == 'BANK' %}bg-info
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ payment.payment_mode.value }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if payment.payment_mode.value == 'MPESA' and payment.mpesa_code %}
+                                <small class="text-muted">{{ payment.mpesa_code }}</small>
+                                {% elif payment.payment_mode.value == 'BANK' and payment.bank_slip_number %}
+                                <small class="text-muted">{{ payment.bank_slip_number }}</small>
+                                {% elif payment.payment_mode.value == 'CHEQUE' and payment.cheque_number %}
+                                <small class="text-muted">{{ payment.cheque_number }}</small>
+                                {% else %}
+                                <small class="text-muted">-</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ payment.processor.name if payment.processor else '-' }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('payment_detail', payment_id=payment.id) }}"
+                                       class="btn btn-outline-primary"
+                                       title="View Receipt">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('student_payments', student_id=payment.student_id) }}"
+                                       class="btn btn-outline-info"
+                                       title="Student Payments">
+                                        <i class="fas fa-list"></i>
+                                    </a>
+                                    {% if not payment.allocations %}
+                                    <a href="{{ url_for('allocate_payment', payment_id=payment.id) }}"
+                                       class="btn btn-outline-warning"
+                                       title="Allocate Payment">
+                                        <i class="fas fa-tasks"></i>
+                                    </a>
+                                    {% else %}
+                                    <span class="btn btn-outline-success btn-sm" title="Allocated">
+                                        <i class="fas fa-check"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No payments found</p>
+                                {% if search %}
+                                <a href="{{ url_for('payment_list') }}" class="btn btn-sm btn-outline-primary">
+                                    Clear Search
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if payments.items %}
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>Page Total:</strong></td>
+                            <td colspan="5">
+                                <strong class="text-success">KSh {{ "{:,.2f}".format(total_amount) }}</strong>
+                            </td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if payments.pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Payment pagination">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    <li class="page-item {% if not payments.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('payment_list', page=payments.prev_num, search=search) if payments.has_prev else '#' }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    {% for page_num in payments.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == payments.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('payment_list', page=page_num, search=search) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    <li class="page-item {% if not payments.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('payment_list', page=payments.next_num, search=search) if payments.has_next else '#' }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    Showing {{ payments.items|length }} of {{ payments.total }} payments
+                    (Page {{ payments.page }} of {{ payments.pages }})
+                </small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="mb-3">Quick Actions</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('student_list') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus-circle"></i> Record New Payment
+                        </a>
+                        <a href="{{ url_for('outstanding_fees_report') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Outstanding Fees
+                        </a>
+                        <a href="{{ url_for('reports') }}" class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar"></i> Payment Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-group-sm > .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+    }
+
+    .table td, .table th {
+        vertical-align: middle;
+    }
+
+    @media print {
+        .card-header button,
+        .btn-group,
+        .card-footer,
+        .page-header,
+        .card:first-child {
+            display: none !important;
+        }
+    }
+</style>
+
+<script>
+function exportToExcel() {
+    // Simple CSV export
+    let csv = 'Receipt No,Date,Student,Admission No,Class,Amount,Payment Mode,Reference\n';
+
+    document.querySelectorAll('#paymentsTable tbody tr').forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 1) {
+            const receiptNo = cells[0].textContent.trim();
+            const date = cells[1].textContent.trim();
+            const studentName = cells[2].textContent.split('\n')[0].trim();
+            const admNo = cells[2].textContent.split('\n')[1].trim();
+            const classInfo = cells[3].textContent.trim();
+            const amount = cells[4].textContent.trim();
+            const mode = cells[5].textContent.trim();
+            const reference = cells[6].textContent.trim();
+
+            csv += `"${receiptNo}","${date}","${studentName}","${admNo}","${classInfo}","${amount}","${mode}","${reference}"\n`;
+        }
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payments_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function printTable() {
+    window.print();
+}
+
+// Auto-submit form on date change for better UX
+document.querySelectorAll('input[type="date"]').forEach(input => {
+    input.addEventListener('change', function() {
+        // Optional: auto-submit when both dates are selected
+        const form = this.closest('form');
+        const fromDate = form.querySelector('input[name="from_date"]').value;
+        const toDate = form.querySelector('input[name="to_date"]').value;
+
+        if (fromDate && toDate) {
+            // Uncomment to enable auto-submit
+            // form.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

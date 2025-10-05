@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Individual Promotion - EduManage Pro{% endblock %}
+
+{% block page_title %}Promote Student: {{ student.full_name }}{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-primary">
+    <i class="fas fa-user me-2"></i>Back to Student
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Student Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-user-graduate me-2"></i>
+                    Student Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ student.first_name[0] }}{{ student.last_name[0] }}
+                    </div>
+                </div>
+
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th>Admission No:</th>
+                        <td>{{ student.admission_no }}</td>
+                    </tr>
+                    <tr>
+                        <th>Full Name:</th>
+                        <td>{{ student.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Current Class:</th>
+                        <td>{{ student.class_obj.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Current Stream:</th>
+                        <td>{{ student.stream.name if student.stream else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Student Type:</th>
+                        <td>
+                            <span class="badge bg-{{ 'success' if student.student_type.value == 'BOARDER' else 'info' }}">
+                                {{ student.student_type.value }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Previous Promotions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Promotion History
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if student.promotions %}
+                    <div class="list-group list-group-flush">
+                        {% for promotion in student.promotions[-3:] %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-bold">{{ promotion.academic_year }}</span>
+                                    <span class="badge bg-{{ 'success' if promotion.status.value == 'PROMOTED' else 'warning' }}">
+                                        {{ promotion.status.value }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    {{ promotion.from_class.name }} → {{ promotion.to_class.name }}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No promotion history available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <!-- Promotion Form -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-level-up-alt me-2"></i>
+                    Process Promotion
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Current Class</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ student.class_obj.name }}"
+                                       readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Current Stream</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ student.stream.name if student.stream else 'N/A' }}"
+                                       readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="to_class_id" class="form-label">Promote To Class <span class="text-danger">*</span></label>
+                                <select class="form-select" id="to_class_id" name="to_class_id" required>
+                                    <option value="">Select New Class</option>
+                                    {% for class in classes %}
+                                        {% if class.id != student.class_id %}
+                                            <option value="{{ class.id }}"
+                                                    {% if student.class_obj.next_class_id == class.id %}selected{% endif %}>
+                                                {{ class.name }}
+                                            </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                {% if student.class_obj.next_class %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Recommended: {{ student.class_obj.next_class.name }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="to_stream_id" class="form-label">New Stream (Optional)</label>
+                                <select class="form-select" id="to_stream_id" name="to_stream_id">
+                                    <option value="">Select Stream</option>
+                                </select>
+                                <small class="text-muted">Will be populated based on selected class</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="academic_year" class="form-label">Academic Year <span class="text-danger">*</span></label>
+                                <input type="number"
+                                       class="form-control"
+                                       id="academic_year"
+                                       name="academic_year"
+                                       value="{{ current_year.year if current_year else '' }}"
+                                       min="2020"
+                                       max="2050"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Promotion Status <span class="text-danger">*</span></label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="PROMOTED">Promoted</option>
+                                    <option value="REPEATED">Repeated</option>
+                                    <option value="TRANSFERRED">Transferred</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control"
+                                  id="notes"
+                                  name="notes"
+                                  rows="3"
+                                  placeholder="Add any additional notes about this promotion..."></textarea>
+                    </div>
+
+                    <!-- Promotion Summary -->
+                    <div class="alert alert-info" id="promotion-summary" style="display: none;">
+                        <h6><i class="fas fa-info-circle me-2"></i>Promotion Summary</h6>
+                        <p class="mb-0" id="summary-text"></p>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-level-up-alt me-2"></i>Process Promotion
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Fee Impact Warning -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0 text-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Important Considerations
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>This will update the student's current class and may affect future fee assessments</li>
+                    <li>Existing unpaid fees will remain in the student's account</li>
+                    <li>Future fee assessments will be based on the new class</li>
+                    <li>Transport arrangements may need to be updated if applicable</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Load streams when class changes
+    $('#to_class_id').change(function() {
+        const classId = $(this).val();
+        const streamSelect = $('#to_stream_id');
+
+        if (classId) {
+            $.get(`/api/streams/${classId}`)
+                .done(function(streams) {
+                    streamSelect.empty().append('<option value="">Select Stream</option>');
+
+                    streams.forEach(function(stream) {
+                        streamSelect.append(`<option value="${stream.id}">${stream.name}</option>`);
+                    });
+                })
+                .fail(function() {
+                    console.error('Failed to load streams');
+                });
+        } else {
+            streamSelect.empty().append('<option value="">Select Stream</option>');
+        }
+
+        updatePromotionSummary();
+    });
+
+    // Update summary when any field changes
+    $('#to_stream_id, #status').change(updatePromotionSummary);
+
+    function updatePromotionSummary() {
+        const toClass = $('#to_class_id option:selected').text();
+        const toStream = $('#to_stream_id option:selected').text();
+        const status = $('#status option:selected').text();
+
+        if (toClass && toClass !== 'Select New Class') {
+            let summaryText = `{{ student.full_name }} will be <strong>${status.toLowerCase()}</strong> to <strong>${toClass}</strong>`;
+
+            if (toStream && toStream !== 'Select Stream') {
+                summaryText += ` - Stream <strong>${toStream}</strong>`;
+            }
+
+            $('#summary-text').html(summaryText);
+            $('#promotion-summary').show();
+        } else {
+            $('#promotion-summary').hide();
+        }
+    }
+
+    // Status change handling
+    $('#status').change(function() {
+        const status = $(this).val();
+        const classGroup = $('#to_class_id').closest('.mb-3');
+
+        if (status === 'REPEATED') {
+            // For repeated students, suggest same class
+            $('#to_class_id').val('{{ student.class_id }}');
+            classGroup.find('.text-muted').html('<i class="fas fa-info-circle me-1"></i>Student will repeat current class');
+        } else if (status === 'TRANSFERRED') {
+            classGroup.find('.text-muted').html('<i class="fas fa-info-circle me-1"></i>Select new class for transfer');
+        } else {
+            // Promoted - suggest next class if available
+            {% if student.class_obj.next_class %}
+                $('#to_class_id').val('{{ student.class_obj.next_class_id }}');
+                classGroup.find('.text-muted').html('<i class="fas fa-info-circle me-1"></i>Recommended: {{ student.class_obj.next_class.name }}');
+            {% endif %}
+        }
+
+        // Trigger class change to load streams
+        $('#to_class_id').trigger('change');
+    });
+
+    // Form validation
+    $('form').submit(function(e) {
+        const toClass = $('#to_class_id option:selected').text();
+        const status = $('#status option:selected').text();
+
+        if (!confirm(`Are you sure you want to process this promotion?\n\n${$('#summary-text').text().replace(/<[^>]*>/g, '')}`)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}Vehicle Revenue Report - EduManage Pro{% endblock %}
+
+{% block page_title %}Vehicle Revenue Report{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('reports') }}" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Reports
+    </a>
+    <button type="button" class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print me-2"></i>Print Report
+    </button>
+    <button type="button" class="btn btn-outline-success" onclick="exportToExcel()">
+        <i class="fas fa-file-excel me-2"></i>Export Excel
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Override base.html styles for summary cards */
+    .bg-gradient-primary,
+    .bg-gradient-success,
+    .bg-gradient-info,
+    .bg-gradient-warning {
+        color: white !important;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%) !important;
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%) !important;
+    }
+
+    .bg-gradient-primary .card-title,
+    .bg-gradient-success .card-title,
+    .bg-gradient-info .card-title,
+    .bg-gradient-warning .card-title,
+    .bg-gradient-primary h4,
+    .bg-gradient-success h4,
+    .bg-gradient-info h4,
+    .bg-gradient-warning h4,
+    .bg-gradient-primary small,
+    .bg-gradient-success small,
+    .bg-gradient-info small,
+    .bg-gradient-warning small {
+        color: white !important;
+    }
+
+    .text-white-50 {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    @media print {
+        .btn-group, .card-header .btn-group, form {
+            display: none !important;
+        }
+    }
+</style>
+
+<!-- Report Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="fas fa-filter me-2"></i>Report Filters
+        </h6>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="term" class="form-label">Term</label>
+                <select class="form-select" id="term" name="term">
+                    <option value="1" {% if term == 1 %}selected{% endif %}>Term 1</option>
+                    <option value="2" {% if term == 2 %}selected{% endif %}>Term 2</option>
+                    <option value="3" {% if term == 3 %}selected{% endif %}>Term 3</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="year" class="form-label">Academic Year</label>
+                <input type="number" class="form-control" id="year" name="year"
+                       value="{{ year or 2025 }}" min="2020" max="2030">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>Generate Report
+                </button>
+            </div>
+            <div class="col-md-3 text-end">
+                <div class="text-muted small">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    Report generated on {{ now.strftime('%d %B %Y at %H:%M') }}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Rate Information Alert -->
+{% if term and year %}
+    {% if not transport_fee %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>No Transport Fee Defined:</strong> Please create a transport fee item with code "TRANSPORT" in Fee Management.
+        </div>
+    {% elif not rate %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>No Rate Defined:</strong> No transport rate has been set for Term {{ term }}/{{ year }}.
+            <a href="{{ url_for('add_fee_rate') }}" class="alert-link">Add Rate Now</a>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Current Rate:</strong> {{ rate.rate_per_km|currency }} per km for Term {{ term }}/{{ year }}
+        </div>
+    {% endif %}
+{% endif %}
+
+<!-- Report Summary -->
+{% if vehicle_data %}
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-gradient-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Active Vehicles</h6>
+                        <h4 class="mb-0">{{ totals.vehicles }}</h4>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-bus fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-gradient-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Students</h6>
+                        <h4 class="mb-0">{{ totals.students }}</h4>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-gradient-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Distance</h6>
+                        <h4 class="mb-0">{{ totals.distance|round(1) }} km</h4>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-route fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-gradient-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Assessed</h6>
+                        <h4 class="mb-0">{{ totals.assessed|currency }}</h4>
+                        <small>Paid: {{ totals.paid|currency }}</small>
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vehicle Revenue Details -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-chart-bar me-2"></i>
+            Vehicle Revenue Breakdown
+            {% if term and year %}
+                <span class="badge bg-primary">Term {{ term }}/{{ year }}</span>
+            {% endif %}
+        </h5>
+        <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="viewMode" id="summaryView" checked>
+            <label class="btn btn-outline-primary" for="summaryView">Summary</label>
+
+            <input type="radio" class="btn-check" name="viewMode" id="detailedView">
+            <label class="btn btn-outline-primary" for="detailedView">Detailed</label>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <!-- Summary View -->
+        <div id="summaryContent">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Driver</th>
+                            <th>Route</th>
+                            <th class="text-center">Students</th>
+                            <th class="text-center">Distance (km)</th>
+                            <th class="text-end">Assessed</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Balance</th>
+                            <th class="text-center">Utilization</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vehicle_info in vehicle_data %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ vehicle_info.vehicle.registration_number }}</div>
+                                    <small class="text-muted">
+                                        {% if vehicle_info.vehicle.make %}
+                                            {{ vehicle_info.vehicle.make }}
+                                            {% if vehicle_info.vehicle.model %} {{ vehicle_info.vehicle.model }}{% endif %}
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if vehicle_info.vehicle.driver_name %}
+                                        <div class="fw-semibold">{{ vehicle_info.vehicle.driver_name }}</div>
+                                        {% if vehicle_info.vehicle.driver_phone %}
+                                            <small class="text-muted">{{ vehicle_info.vehicle.driver_phone }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">Not assigned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if vehicle_info.vehicle.route_description %}
+                                        <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ vehicle_info.vehicle.route_description }}">
+                                            {{ vehicle_info.vehicle.route_description }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">No route specified</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">{{ vehicle_info.total_students }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-semibold">{{ vehicle_info.total_distance|round(1) }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold text-primary">{{ vehicle_info.total_assessed|currency }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold text-success">{{ vehicle_info.total_paid|currency }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold {% if vehicle_info.total_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ vehicle_info.total_balance|currency }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% set utilization = (vehicle_info.total_students / vehicle_info.vehicle.capacity * 100) if vehicle_info.vehicle.capacity else 0 %}
+                                    <div class="progress" style="width: 60px; height: 20px;">
+                                        <div class="progress-bar
+                                             {% if utilization >= 80 %}bg-success
+                                             {% elif utilization >= 60 %}bg-warning
+                                             {% else %}bg-danger{% endif %}"
+                                             style="width: {{ utilization }}%"></div>
+                                    </div>
+                                    <small class="text-muted">{{ utilization|round }}%</small>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-info"
+                                            onclick="showVehicleDetails({{ loop.index0 }})"
+                                            title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        {% if not vehicle_data %}
+                            <tr>
+                                <td colspan="10" class="text-center py-5 text-muted">
+                                    <i class="fas fa-bus fa-3x mb-3 d-block"></i>
+                                    <h6>No Vehicles Found</h6>
+                                    <p>No active vehicles with transport assignments for the selected period.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                    {% if vehicle_data %}
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="3">TOTAL</th>
+                            <th class="text-center">{{ totals.students }}</th>
+                            <th class="text-center">{{ totals.distance|round(1) }}</th>
+                            <th class="text-end">{{ totals.assessed|currency }}</th>
+                            <th class="text-end">{{ totals.paid|currency }}</th>
+                            <th class="text-end">{{ totals.balance|currency }}</th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Detailed View -->
+        <div id="detailedContent" style="display: none;">
+            {% for vehicle_info in vehicle_data %}
+                <div class="border-bottom p-4" id="vehicle-{{ loop.index0 }}">
+                    <div class="row">
+                        <div class="col-lg-4 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-bus me-2"></i>
+                                        {{ vehicle_info.vehicle.registration_number }}
+                                    </h6>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <small class="text-muted">Driver:</small><br>
+                                            <span class="fw-semibold">{{ vehicle_info.vehicle.driver_name or 'Not assigned' }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Capacity:</small><br>
+                                            <span class="fw-semibold">{{ vehicle_info.vehicle.capacity or 'N/A' }} seats</span>
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <small class="text-muted">Route:</small><br>
+                                            <span class="fw-semibold">{{ vehicle_info.vehicle.route_description or 'No route specified' }}</span>
+                                        </div>
+                                        <div class="col-6 mt-2">
+                                            <small class="text-muted">Students:</small><br>
+                                            <span class="fw-semibold">{{ vehicle_info.total_students }}</span>
+                                        </div>
+                                        <div class="col-6 mt-2">
+                                            <small class="text-muted">Distance:</small><br>
+                                            <span class="fw-semibold">{{ vehicle_info.total_distance|round(1) }} km</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <h6 class="mb-3">Student Details</h6>
+                            {% if vehicle_info.students %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Student</th>
+                                                <th>Class</th>
+                                                <th class="text-center">Distance (km)</th>
+                                                <th class="text-end">Assessed</th>
+                                                <th class="text-end">Paid</th>
+                                                <th class="text-end">Balance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for student_info in vehicle_info.students %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-semibold">{{ student_info.student.full_name }}</div>
+                                                        <small class="text-muted">{{ student_info.student.admission_no }}</small>
+                                                    </td>
+                                                    <td>
+                                                        {{ student_info.student.class_obj.name }}
+                                                        {% if student_info.student.stream %}-{{ student_info.student.stream.name }}{% endif %}
+                                                    </td>
+                                                    <td class="text-center">{{ student_info.distance|round(1) }}</td>
+                                                    <td class="text-end">{{ student_info.assessed|currency }}</td>
+                                                    <td class="text-end">{{ student_info.paid|currency }}</td>
+                                                    <td class="text-end {% if student_info.balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                                        {{ student_info.balance|currency }}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot class="table-primary">
+                                            <tr>
+                                                <th colspan="2">Vehicle Total</th>
+                                                <th class="text-center">{{ vehicle_info.total_distance|round(1) }} km</th>
+                                                <th class="text-end">{{ vehicle_info.total_assessed|currency }}</th>
+                                                <th class="text-end">{{ vehicle_info.total_paid|currency }}</th>
+                                                <th class="text-end">{{ vehicle_info.total_balance|currency }}</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No students with transport distance assigned to this vehicle.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- No Data State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-chart-line text-muted mb-4" style="font-size: 4rem;"></i>
+        <h4 class="text-muted mb-3">No Data Available</h4>
+        <p class="text-muted mb-4">
+            Please select a term and year to generate the vehicle revenue report.
+            <br>Make sure there are active vehicles with transport assignments.
+        </p>
+        <div class="d-flex gap-2 justify-content-center">
+            <a href="{{ url_for('vehicle_list') }}" class="btn btn-outline-primary">
+                <i class="fas fa-bus me-2"></i>Manage Vehicles
+            </a>
+            <a href="{{ url_for('add_vehicle') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add Vehicle
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // View mode toggle
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const summaryContent = document.getElementById('summaryContent');
+            const detailedContent = document.getElementById('detailedContent');
+
+            if (this.id === 'summaryView') {
+                summaryContent.style.display = 'block';
+                detailedContent.style.display = 'none';
+            } else {
+                summaryContent.style.display = 'none';
+                detailedContent.style.display = 'block';
+            }
+        });
+    });
+
+    function showVehicleDetails(index) {
+        // Switch to detailed view
+        document.getElementById('detailedView').checked = true;
+        document.getElementById('detailedView').dispatchEvent(new Event('change'));
+
+        // Scroll to the specific vehicle section
+        setTimeout(() => {
+            const vehicleSection = document.getElementById('vehicle-' + index);
+            if (vehicleSection) {
+                vehicleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+    }
+
+    function exportToExcel() {
+        alert('Excel export functionality - integrate a library like xlsx or use server-side generation');
+    }
+</script>
+{% endblock %}

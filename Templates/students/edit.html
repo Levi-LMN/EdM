@@ -1,0 +1,480 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Student - {{ student.full_name }} - EduManage Pro{% endblock %}
+
+{% block page_title %}Edit Student: {{ student.full_name }}{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-primary">
+        <i class="fas fa-eye me-2"></i>View Profile
+    </a>
+    <a href="{{ url_for('student_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Students
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Main Form Container -->
+        <form method="POST" id="edit-form">
+            <!-- Personal Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-edit me-2"></i>
+                        Personal Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="admission_no" class="form-label">
+                                    Admission Number <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="admission_no"
+                                       name="admission_no"
+                                       value="{{ student.admission_no }}"
+                                       required>
+                                <div class="form-text">
+                                    Unique identifier for the student
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                <input type="date"
+                                       class="form-control"
+                                       id="date_of_birth"
+                                       name="date_of_birth"
+                                       value="{{ student.date_of_birth.strftime('%Y-%m-%d') if student.date_of_birth else '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="first_name" class="form-label">
+                                    First Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="first_name"
+                                       name="first_name"
+                                       value="{{ student.first_name }}"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label">
+                                    Last Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="last_name"
+                                       name="last_name"
+                                       value="{{ student.last_name }}"
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="student_type" class="form-label">
+                            Student Type <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="student_type" name="student_type" required>
+                            <option value="DAY" {% if student.student_type.value == 'DAY' %}selected{% endif %}>Day Scholar</option>
+                            <option value="BOARDER" {% if student.student_type.value == 'BOARDER' %}selected{% endif %}>Boarder</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        Academic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="class_id" class="form-label">
+                                    Class <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="class_id" name="class_id" required>
+                                    <option value="">Select Class</option>
+                                    {% for class in classes %}
+                                        <option value="{{ class.id }}" {% if student.class_id == class.id %}selected{% endif %}>
+                                            {{ class.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="stream_id" class="form-label">Stream</label>
+                                <select class="form-select" id="stream_id" name="stream_id">
+                                    <option value="">No Stream</option>
+                                    <!-- Streams will be loaded based on selected class -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parent/Guardian Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Parent/Guardian Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="parent_name" class="form-label">Parent/Guardian Name</label>
+                        <input type="text"
+                               class="form-control"
+                               id="parent_name"
+                               name="parent_name"
+                               value="{{ student.parent_name or '' }}">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_phone" class="form-label">Phone Number</label>
+                                <input type="tel"
+                                       class="form-control"
+                                       id="parent_phone"
+                                       name="parent_phone"
+                                       value="{{ student.parent_phone or '' }}"
+                                       placeholder="+254 700 000 000">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parent_email" class="form-label">Email Address</label>
+                                <input type="email"
+                                       class="form-control"
+                                       id="parent_email"
+                                       name="parent_email"
+                                       value="{{ student.parent_email or '' }}"
+                                       placeholder="parent@example.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transport Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bus me-2"></i>
+                        Transport Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vehicle_id" class="form-label">Assigned Vehicle</label>
+                                <select class="form-select" id="vehicle_id" name="vehicle_id">
+                                    <option value="">No Transport</option>
+                                    {% for vehicle in vehicles %}
+                                        <option value="{{ vehicle.id }}" {% if student.vehicle_id == vehicle.id %}selected{% endif %}>
+                                            {{ vehicle.registration_number }} - {{ vehicle.route_description or 'No route specified' }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transport_distance_km" class="form-label">Distance (km)</label>
+                                <input type="number"
+                                       class="form-control"
+                                       id="transport_distance_km"
+                                       name="transport_distance_km"
+                                       value="{{ student.transport_distance_km or '' }}"
+                                       step="0.1"
+                                       min="0"
+                                       placeholder="e.g., 5.5">
+                                <div class="form-text">
+                                    Distance from home to school (used for transport fee calculation)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Transport fees are automatically calculated based on the distance and current rates.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sidebar with Student Info -->
+    <div class="col-md-4">
+        <!-- Current Student Info -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Current Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ student.first_name[0] }}{{ student.last_name[0] }}
+                    </div>
+                </div>
+
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="40%">Admission:</th>
+                        <td>{{ student.admission_no }}</td>
+                    </tr>
+                    <tr>
+                        <th>Full Name:</th>
+                        <td>{{ student.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Class:</th>
+                        <td>{{ student.class_obj.name }}{% if student.stream %} - {{ student.stream.name }}{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <th>Type:</th>
+                        <td>
+                            <span class="badge bg-{{ 'success' if student.student_type.value == 'BOARDER' else 'info' }}">
+                                {{ student.student_type.value }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            <span class="badge bg-{{ 'success' if student.is_active else 'secondary' }}">
+                                {{ 'Active' if student.is_active else 'Inactive' }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('add_payment', student_id=student.id) }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus me-2"></i>Add Payment
+                    </a>
+                    <a href="{{ url_for('individual_fee_assignment', student_id=student.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-tags me-2"></i>Assign Fee
+                    </a>
+                    <a href="{{ url_for('student_statement', student_id=student.id) }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-file-alt me-2"></i>View Statement
+                    </a>
+                    <a href="{{ url_for('individual_promotion', student_id=student.id) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-level-up-alt me-2"></i>Promote Student
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Log -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent Changes
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <small class="text-muted">Last updated</small>
+                        <div>Profile information</div>
+                    </div>
+                    <div class="timeline-item">
+                        <small class="text-muted">{{ student.admission_date.strftime('%d %b %Y') if student.admission_date else 'Unknown' }}</small>
+                        <div>Student admitted</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Load streams when class changes
+    $('#class_id').change(function() {
+        const classId = $(this).val();
+        const streamSelect = $('#stream_id');
+        const currentStreamId = {{ student.stream_id if student.stream_id else 'null' }};
+
+        if (classId) {
+            $.get(`/api/streams/${classId}`)
+                .done(function(streams) {
+                    streamSelect.empty().append('<option value="">No Stream</option>');
+
+                    streams.forEach(function(stream) {
+                        const selected = stream.id === currentStreamId ? 'selected' : '';
+                        streamSelect.append(`<option value="${stream.id}" ${selected}>${stream.name}</option>`);
+                    });
+                })
+                .fail(function() {
+                    console.error('Failed to load streams');
+                    streamSelect.empty().append('<option value="">No Stream</option>');
+                });
+        } else {
+            streamSelect.empty().append('<option value="">No Stream</option>');
+        }
+    });
+
+    // Load initial streams if class is selected
+    if ($('#class_id').val()) {
+        $('#class_id').trigger('change');
+    }
+
+    // Enable/disable transport distance based on vehicle selection
+    $('#vehicle_id').change(function() {
+        const hasVehicle = $(this).val() !== '';
+        $('#transport_distance_km').prop('disabled', !hasVehicle);
+
+        if (!hasVehicle) {
+            $('#transport_distance_km').val('');
+        }
+    });
+
+    // Form validation
+    $('#edit-form').submit(function(e) {
+        const admissionNo = $('#admission_no').val().trim();
+        const firstName = $('#first_name').val().trim();
+        const lastName = $('#last_name').val().trim();
+        const classId = $('#class_id').val();
+
+        if (!admissionNo || !firstName || !lastName || !classId) {
+            e.preventDefault();
+            alert('Please fill in all required fields (Admission Number, First Name, Last Name, and Class)');
+            return false;
+        }
+
+        // Validate phone number format if provided
+        const phone = $('#parent_phone').val().trim();
+        if (phone && !/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ''))) {
+            e.preventDefault();
+            alert('Please enter a valid phone number');
+            $('#parent_phone').focus();
+            return false;
+        }
+
+        // Validate email if provided
+        const email = $('#parent_email').val().trim();
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            e.preventDefault();
+            alert('Please enter a valid email address');
+            $('#parent_email').focus();
+            return false;
+        }
+
+        // Validate transport distance if vehicle is selected
+        const vehicleId = $('#vehicle_id').val();
+        const distance = $('#transport_distance_km').val();
+
+        if (vehicleId && (!distance || parseFloat(distance) <= 0)) {
+            if (confirm('You have selected a vehicle but no distance is specified. Transport fees may not be calculated correctly. Continue anyway?')) {
+                return true;
+            } else {
+                e.preventDefault();
+                $('#transport_distance_km').focus();
+                return false;
+            }
+        }
+    });
+
+    // Auto-format phone number
+    $('#parent_phone').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.startsWith('254')) {
+            value = '+' + value;
+        } else if (value.startsWith('0')) {
+            value = '+254' + value.substring(1);
+        }
+        $(this).val(value);
+    });
+
+    // Capitalize names
+    $('#first_name, #last_name, #parent_name').on('blur', function() {
+        const value = $(this).val();
+        $(this).val(value.charAt(0).toUpperCase() + value.slice(1).toLowerCase());
+    });
+
+    // Show unsaved changes warning
+    let formChanged = false;
+    $('#edit-form input, #edit-form select').on('change', function() {
+        formChanged = true;
+    });
+
+    $(window).on('beforeunload', function(e) {
+        if (formChanged) {
+            return 'You have unsaved changes. Are you sure you want to leave?';
+        }
+    });
+
+    $('#edit-form').on('submit', function() {
+        formChanged = false;
+    });
+});
+</script>
+{% endblock %}

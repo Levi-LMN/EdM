@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Individual Fee Assignment - {{ student.full_name }} - EduManage Pro{% endblock %}
+
+{% block page_title %}Individual Fee Assignment - {{ student.full_name }}{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Student
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-tag me-2"></i>Assign Custom Fee
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fee_item_id" class="form-label">Fee Item</label>
+                                <select class="form-select" id="fee_item_id" name="fee_item_id" required>
+                                    <option value="">Select Fee Item</option>
+                                    {% for fee_item in fee_items %}
+                                    <option value="{{ fee_item.id }}" data-per-km="{{ fee_item.is_per_km }}">
+                                        {{ fee_item.name }} ({{ fee_item.code }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="term" class="form-label">Term</label>
+                                <select class="form-select" id="term" name="term" required>
+                                    <option value="1">Term 1</option>
+                                    <option value="2">Term 2</option>
+                                    <option value="3">Term 3</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="year" class="form-label">Year</label>
+                                <input type="number" class="form-control" id="year" name="year"
+                                       value="{{ current_year.year if current_year else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" id="fixed-amount-group">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="custom_amount" class="form-label">Custom Amount (KSh)</label>
+                                <input type="number" class="form-control" id="custom_amount" name="custom_amount"
+                                       step="0.01" placeholder="Enter fixed amount">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" id="per-km-group" style="display: none;">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="custom_rate_per_km" class="form-label">Rate per KM (KSh)</label>
+                                <input type="number" class="form-control" id="custom_rate_per_km" name="custom_rate_per_km"
+                                       step="0.01" placeholder="Rate per kilometer">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="custom_distance" class="form-label">Distance (KM)</label>
+                                <input type="number" class="form-control" id="custom_distance" name="custom_distance"
+                                       step="0.01" value="{{ student.transport_distance_km or '' }}"
+                                       placeholder="Distance in kilometers">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Calculated Amount</label>
+                                <div class="form-control bg-light" id="calculated-amount">KSh 0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                                  placeholder="Optional notes about this assignment"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Create Assignment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Student Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Admission No:</strong> {{ student.admission_no }}
+                </div>
+                <div class="mb-2">
+                    <strong>Class:</strong> {{ student.class_obj.name }}{% if student.stream %}-{{ student.stream.name }}{% endif %}
+                </div>
+                <div class="mb-2">
+                    <strong>Student Type:</strong> {{ student.student_type.value }}
+                </div>
+                {% if student.transport_distance_km %}
+                <div class="mb-2">
+                    <strong>Transport Distance:</strong> {{ student.transport_distance_km }} km
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if existing_assignments %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Existing Assignments</h6>
+            </div>
+            <div class="card-body">
+                {% for assignment in existing_assignments %}
+                <div class="mb-2 p-2 border rounded">
+                    <strong>{{ assignment.fee_item.name }}</strong><br>
+                    <small class="text-muted">
+                        Term {{ assignment.term }} {{ assignment.year }}<br>
+                        {% if assignment.custom_amount %}
+                            Amount: KSh {{ assignment.custom_amount|currency }}
+                        {% elif assignment.custom_rate_per_km %}
+                            Rate: KSh {{ assignment.custom_rate_per_km }}/km
+                        {% endif %}
+                    </small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Toggle between fixed amount and per-km fields
+    $('#fee_item_id').on('change', function() {
+        const isPerKm = $(this).find('option:selected').data('per-km');
+
+        if (isPerKm) {
+            $('#fixed-amount-group').hide();
+            $('#per-km-group').show();
+        } else {
+            $('#fixed-amount-group').show();
+            $('#per-km-group').hide();
+        }
+
+        calculateAmount();
+    });
+
+    // Calculate amount for per-km fees
+    $('#custom_rate_per_km, #custom_distance').on('input', calculateAmount);
+
+    function calculateAmount() {
+        const rate = parseFloat($('#custom_rate_per_km').val()) || 0;
+        const distance = parseFloat($('#custom_distance').val()) || 0;
+        const total = rate * distance;
+
+        $('#calculated-amount').text('KSh ' + total.toLocaleString('en-US', {minimumFractionDigits: 2}));
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}Student Statement - {{ student.full_name }} - EduManage Pro{% endblock %}
+
+{% block page_title %}Student Fee Statement{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <button class="btn btn-outline-success" disabled>
+        <i class="fas fa-file-excel me-2"></i>Export Excel
+    </button>
+    <button class="btn btn-outline-danger" onclick="window.print()">
+        <i class="fas fa-print me-2"></i>Print Statement
+    </button>
+    <a href="{{ url_for('student_detail', student_id=student.id) }}" class="btn btn-outline-primary">
+        <i class="fas fa-user me-2"></i>Back to Student
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Student Info -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-user-graduate me-2"></i>
+                    Student Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ student.first_name[0] }}{{ student.last_name[0] }}
+                    </div>
+                    <h5 class="mt-2 mb-0">{{ student.full_name }}</h5>
+                    <small class="text-muted">{{ student.admission_no }}</small>
+                </div>
+
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="40%">Class:</th>
+                        <td>{{ student.class_obj.name }}{% if student.stream %} - {{ student.stream.name }}{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <th>Type:</th>
+                        <td>
+                            <span class="badge bg-{{ 'success' if student.student_type.value == 'BOARDER' else 'info' }}">
+                                {{ student.student_type.value }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Admission:</th>
+                        <td>{{ student.admission_date.strftime('%d %b %Y') if student.admission_date else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Parent:</th>
+                        <td>{{ student.parent_name or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ student.parent_phone or 'N/A' }}</td>
+                    </tr>
+                    {% if student.vehicle %}
+                        <tr>
+                            <th>Transport:</th>
+                            <td>{{ student.vehicle.registration_number }}</td>
+                        </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Balance Summary -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    Balance Summary
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-3">
+                        <h4 class="text-primary">{{ "KSh {:,.2f}".format(balance_summary.total_assessed) }}</h4>
+                        <small class="text-muted">Total Assessed</small>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <h4 class="text-success">{{ "KSh {:,.2f}".format(balance_summary.total_payments) }}</h4>
+                        <small class="text-muted">Total Payments</small>
+                    </div>
+                    <div class="col-12">
+                        <hr>
+                        <h3 class="{{ 'text-danger' if balance_summary.overall_balance > 0 else 'text-success' }}">
+                            {{ "KSh {:,.2f}".format(balance_summary.overall_balance) }}
+                        </h3>
+                        <small class="text-muted">
+                            {% if balance_summary.overall_balance > 0 %}
+                                Outstanding Balance
+                            {% elif balance_summary.overall_balance < 0 %}
+                                Credit Balance
+                            {% else %}
+                                Fully Paid
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statement Details -->
+    <div class="col-md-8">
+        <!-- Term-wise Breakdown -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Term-wise Balance Summary
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if balance_summary.term_balances %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Term</th>
+                                    <th>Year</th>
+                                    <th class="text-end">Assessed</th>
+                                    <th class="text-end">Paid</th>
+                                    <th class="text-end">Balance</th>
+                                    <th class="text-end">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for term in balance_summary.term_balances %}
+                                    <tr>
+                                        <td>Term {{ term.term }}</td>
+                                        <td>{{ term.year }}</td>
+                                        <td class="text-end">{{ "KSh {:,.2f}".format(term.assessed) }}</td>
+                                        <td class="text-end">{{ "KSh {:,.2f}".format(term.paid) }}</td>
+                                        <td class="text-end">
+                                            <span class="{{ 'text-danger fw-bold' if term.balance > 0 else 'text-success' }}">
+                                                {{ "KSh {:,.2f}".format(term.balance) }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            {% if term.balance <= 0 %}
+                                                <span class="badge bg-success">Paid</span>
+                                            {% elif term.paid == 0 %}
+                                                <span class="badge bg-danger">Unpaid</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Partial</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No assessment data available</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Detailed Assessment History -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Fee Assessment Details
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if assessments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Term/Year</th>
+                                    <th>Fee Item</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assessment in assessments %}
+                                    <tr>
+                                        <td>{{ assessment.assessed_date.strftime('%d %b %Y') }}</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                T{{ assessment.term }}/{{ assessment.year }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold">{{ assessment.fee_item.name }}</span>
+                                            <br><small class="text-muted">{{ assessment.fee_item.code }}</small>
+                                        </td>
+                                        <td>{{ assessment.description or assessment.fee_item.description }}</td>
+                                        <td class="text-end fw-bold">{{ "KSh {:,.2f}".format(assessment.amount) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="4">Total Assessments</th>
+                                    <th class="text-end">{{ "KSh {:,.2f}".format(assessments|sum(attribute='amount')) }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No fee assessments found</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Payment History -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-credit-card me-2"></i>
+                    Payment History
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Receipt No</th>
+                                    <th>Payment Mode</th>
+                                    <th>Reference</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                    <tr>
+                                        <td>{{ payment.payment_date.strftime('%d %b %Y') }}</td>
+                                        <td>
+                                            <span class="fw-bold text-primary">{{ payment.receipt_number }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if payment.payment_mode.value == 'MPESA' else 'primary' if payment.payment_mode.value == 'BANK' else 'secondary' }}">
+                                                {{ payment.payment_mode.value }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if payment.mpesa_code %}
+                                                M-Pesa: {{ payment.mpesa_code }}
+                                            {% elif payment.bank_slip_number %}
+                                                Bank: {{ payment.bank_slip_number }}
+                                            {% elif payment.cheque_number %}
+                                                Cheque: {{ payment.cheque_number }}
+                                            {% else %}
+                                                {{ payment.payment_mode.value }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end fw-bold text-success">{{ "KSh {:,.2f}".format(payment.amount) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="4">Total Payments</th>
+                                    <th class="text-end text-success">{{ "KSh {:,.2f}".format(payments|sum(attribute='amount')) }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle text-muted fa-2x"></i>
+                        <p class="text-muted mt-2">No payments recorded yet</p>
+                        <a href="{{ url_for('add_payment', student_id=student.id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Payment
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('add_payment', student_id=student.id) }}" class="btn btn-success">
+                                <i class="fas fa-plus me-2"></i>Record Payment
+                            </a>
+                            <a href="{{ url_for('individual_fee_assignment', student_id=student.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-tags me-2"></i>Assign Individual Fee
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-info" disabled>
+                                <i class="fas fa-envelope me-2"></i>Send Statement
+                            </button>
+                            <button class="btn btn-outline-warning" disabled>
+                                <i class="fas fa-bell me-2"></i>Send Reminder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style media="print">
+    .btn, .card-header, .page-header, nav, .sidebar {
+        display: none !important;
+    }
+
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .card-body {
+        padding: 0.5rem !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        color: #000 !important;
+    }
+
+    .text-primary, .text-success, .text-danger {
+        color: #000 !important;
+    }
+
+    .table th, .table td {
+        border: 1px solid #000 !important;
+        padding: 0.5rem !important;
+    }
+
+    .badge {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        background: #fff !important;
+    }
+
+    @page {
+        margin: 2cm;
+    }
+
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #000;
+        padding-bottom: 1rem;
+    }
+</style>
+
+<!-- Print Header (hidden on screen) -->
+<div class="print-header" style="display: none;">
+    <h2>EduManage Pro - Student Fee Statement</h2>
+    <p>Generated on {{ moment().format('DD MMMM YYYY') }}</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Enhanced print functionality
+    const originalPrint = window.print;
+    window.print = function() {
+        // Add print timestamp
+        const printDate = new Date().toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+        $('.print-header p').text(`Generated on ${printDate}`);
+
+        // Call original print
+        originalPrint();
+    };
+
+    // Add highlight to overdue balances
+    $('.text-danger').closest('tr').addClass('table-warning');
+
+    // Add interactive tooltips for payment methods
+    $('tbody tr').each(function() {
+        const paymentMode = $(this).find('.badge').text().trim();
+        const reference = $(this).find('td:nth-child(4)').text().trim();
+
+        if (reference && reference !== paymentMode) {
+            $(this).find('.badge').attr('title', reference).tooltip();
+        }
+    });
+
+    // Smooth scroll to sections
+    $('a[href^="#"]').on('click', function(e) {
+        e.preventDefault();
+        const target = $($(this).attr('href'));
+        if (target.length) {
+            $('html, body').animate({
+                scrollTop: target.offset().top - 100
+            }, 500);
+        }
+    });
+
+    // Add loading state for async actions
+    $('.btn[href*="add_payment"]').on('click', function() {
+        const $this = $(this);
+        const originalText = $this.html();
+        $this.html('<i class="fas fa-spinner fa-spin me-2"></i>Loading...');
+
+        // Restore original text if navigation fails
+        setTimeout(() => {
+            $this.html(originalText);
+        }, 3000);
+    });
+});
+</script>
+{% endblock %}
