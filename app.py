@@ -1202,7 +1202,18 @@ def delete_payment(payment_id):
 @app.route('/reports')
 @login_required
 def reports():
-    return render_template('reports/index.html')
+    """
+    Reports & Analytics dashboard.
+    Renders the reports/index.html template with model access for counts and stats.
+    """
+    return render_template(
+        'reports/index.html',
+        now=datetime.now(),
+        Student=Student,
+        Payment=Payment,
+        Vehicle=Vehicle,
+        Expense=Expense
+    )
 
 
 @app.route('/reports/class_summary')
@@ -3019,6 +3030,1008 @@ def amount_to_words(amount):
 def amount_to_words_filter(amount):
     """Template filter for converting amounts to words"""
     return amount_to_words(amount)
+
+
+# Add these imports at the top of your app.py
+from io import BytesIO
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from flask import send_file
+
+
+# ===========================
+#  EXCEL REPORT ROUTES
+# ===========================
+
+def create_excel_workbook():
+    """Create a new Excel workbook with default styling"""
+    wb = openpyxl.Workbook()
+    return wb
+
+
+def style_header_row(ws, row_num=1):
+    """Apply styling to header row"""
+    header_fill = PatternFill(start_color="667EEA", end_color="667EEA", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+
+    for cell in ws[row_num]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+
+def auto_adjust_column_width(ws):
+    """Auto-adjust column widths"""
+    for column in ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+
+@app.route('/download/all-data')
+@login_required
+def download_all_data():
+    """Download complete system data in Excel format"""
+    wb = create_excel_workbook()
+    wb.remove(wb.active)  # Remove default sheet
+
+    # Summary Sheet
+    ws_summary = wb.create_sheet("Summary")
+    ws_summary.append(["ST LUKE MOGOBICH ACADEMY - COMPLETE DATA EXPORT"])
+    ws_summary.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws_summary.append([])
+    ws_summary.append(["Category", "Count"])
+
+    ws_summary.append(["Active Students", Student.query.filter_by(is_active=True).count()])
+    ws_summary.append(["Total Payments", Payment.query.count()])
+    ws_summary.append(["Active Vehicles", Vehicle.query.filter_by(is_active=True).count()])
+    ws_summary.append(["Total Expenses", Expense.query.count()])
+    ws_summary.append(["Classes", Class.query.count()])
+    ws_summary.append(["Fee Items", FeeItem.query.count()])
+
+    # Total Financial Summary
+    total_assessed = db.session.query(func.sum(FeeAssessment.amount)).scalar() or 0
+    total_paid = db.session.query(func.sum(Payment.amount)).scalar() or 0
+    total_expenses = db.session.query(func.sum(Expense.amount)).scalar() or 0
+
+    ws_summary.append([])
+    ws_summary.append(["Financial Summary"])
+    ws_summary.append(["Total Fees Assessed", f"KSh {float(total_assessed):,.2f}"])
+    ws_summary.append(["Total Payments Received", f"KSh {float(total_paid):,.2f}"])
+    ws_summary.append(["Outstanding Balance", f"KSh {float(total_assessed - total_paid):,.2f}"])
+    ws_summary.append(["Total Expenses", f"KSh {float(total_expenses):,.2f}"])
+
+    style_header_row(ws_summary, 4)
+    style_header_row(ws_summary, 12)
+    auto_adjust_column_width(ws_summary)
+
+    # Students Sheet
+    ws_students = wb.create_sheet("Students")
+    ws_students.append(["Admission No", "First Name", "Last Name", "Class", "Stream",
+                        "Student Type", "Parent Name", "Parent Phone", "Vehicle",
+                        "Transport Distance (km)", "Status"])
+
+    students = Student.query.all()
+    for student in students:
+        ws_students.append([
+            student.admission_no,
+            student.first_name,
+            student.last_name,
+            student.class_obj.name,
+            student.stream.name if student.stream else "N/A",
+            student.student_type.value,
+            student.parent_name,
+            student.parent_phone,
+            student.vehicle.registration_number if student.vehicle else "N/A",
+            float(student.transport_distance_km) if student.transport_distance_km else 0,
+            "Active" if student.is_active else "Inactive"
+        ])
+
+    style_header_row(ws_students)
+    auto_adjust_column_width(ws_students)
+
+    # Payments Sheet
+    ws_payments = wb.create_sheet("Payments")
+    ws_payments.append(["Receipt No", "Date", "Student", "Admission No", "Amount",
+                        "Payment Mode", "M-Pesa Code", "Bank Slip", "Processed By"])
+
+    payments = Payment.query.order_by(desc(Payment.payment_date)).all()
+    for payment in payments:
+        ws_payments.append([
+            payment.receipt_number,
+            payment.payment_date.strftime('%Y-%m-%d'),
+            payment.student.full_name,
+            payment.student.admission_no,
+            float(payment.amount),
+            payment.payment_mode.value,
+            payment.mpesa_code or "",
+            payment.bank_slip_number or "",
+            payment.processor.name if payment.processor else "SYSTEM"
+        ])
+
+    style_header_row(ws_payments)
+    auto_adjust_column_width(ws_payments)
+
+    # Fee Assessments Sheet
+    ws_assessments = wb.create_sheet("Fee Assessments")
+    ws_assessments.append(["Student", "Admission No", "Fee Item", "Term", "Year",
+                           "Amount", "Assessed Date"])
+
+    assessments = FeeAssessment.query.order_by(desc(FeeAssessment.year),
+                                               desc(FeeAssessment.term)).all()
+    for assessment in assessments:
+        ws_assessments.append([
+            assessment.student.full_name,
+            assessment.student.admission_no,
+            assessment.fee_item.name,
+            assessment.term,
+            assessment.year,
+            float(assessment.amount),
+            assessment.assessed_date.strftime('%Y-%m-%d')
+        ])
+
+    style_header_row(ws_assessments)
+    auto_adjust_column_width(ws_assessments)
+
+    # Expenses Sheet
+    ws_expenses = wb.create_sheet("Expenses")
+    ws_expenses.append(["Date", "Category", "Description", "Amount", "Payment Method",
+                        "Reference", "Supplier", "Approved By"])
+
+    expenses = Expense.query.order_by(desc(Expense.expense_date)).all()
+    for expense in expenses:
+        ws_expenses.append([
+            expense.expense_date.strftime('%Y-%m-%d'),
+            expense.category.name,
+            expense.description,
+            float(expense.amount),
+            expense.payment_method.value if expense.payment_method else "N/A",
+            expense.reference_number or "",
+            expense.supplier_name or "",
+            expense.approved_by or ""
+        ])
+
+    style_header_row(ws_expenses)
+    auto_adjust_column_width(ws_expenses)
+
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Complete_School_Data_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/students-by-class')
+@login_required
+def download_students_by_class():
+    """Download students organized by class with separate tabs"""
+    wb = create_excel_workbook()
+    wb.remove(wb.active)
+
+    # Summary Sheet
+    ws_summary = wb.create_sheet("Summary")
+    ws_summary.append(["CLASS SUMMARY REPORT"])
+    ws_summary.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws_summary.append([])
+    ws_summary.append(["Class", "Total Students", "Day Students", "Boarders", "Active", "Inactive"])
+
+    classes = Class.query.all()
+    total_students = 0
+
+    for class_obj in classes:
+        students = Student.query.filter_by(class_id=class_obj.id).all()
+        active = len([s for s in students if s.is_active])
+        inactive = len([s for s in students if not s.is_active])
+        day = len([s for s in students if s.student_type == StudentType.DAY])
+        boarders = len([s for s in students if s.student_type == StudentType.BOARDER])
+
+        ws_summary.append([
+            class_obj.name,
+            len(students),
+            day,
+            boarders,
+            active,
+            inactive
+        ])
+        total_students += len(students)
+
+    ws_summary.append([])
+    ws_summary.append(["TOTAL", total_students])
+
+    style_header_row(ws_summary, 4)
+    auto_adjust_column_width(ws_summary)
+
+    # Create sheet for each class
+    for class_obj in classes:
+        # Sanitize sheet name (Excel has 31 char limit and special char restrictions)
+        sheet_name = class_obj.name[:31].replace('/', '-').replace('\\', '-')
+        ws = wb.create_sheet(sheet_name)
+
+        ws.append([f"{class_obj.name} - Student List"])
+        ws.append([])
+        ws.append(["Admission No", "First Name", "Last Name", "Stream", "Type",
+                   "Parent Name", "Parent Phone", "Vehicle", "Distance (km)", "Balance"])
+
+        students = Student.query.filter_by(class_id=class_obj.id, is_active=True).all()
+
+        for student in students:
+            balance = student.get_current_balance()
+            ws.append([
+                student.admission_no,
+                student.first_name,
+                student.last_name,
+                student.stream.name if student.stream else "N/A",
+                student.student_type.value,
+                student.parent_name,
+                student.parent_phone,
+                student.vehicle.registration_number if student.vehicle else "N/A",
+                float(student.transport_distance_km) if student.transport_distance_km else 0,
+                float(balance)
+            ])
+
+        # Add summary at bottom
+        ws.append([])
+        ws.append(["Total Students:", len(students)])
+
+        style_header_row(ws, 3)
+        auto_adjust_column_width(ws)
+
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Students_By_Class_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/fee-collection-report')
+@login_required
+def download_fee_collection_report():
+    """Download fee collection summary report"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Fee Collection Summary"
+
+    ws.append(["FEE COLLECTION SUMMARY REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Term", "Year", "Total Assessed", "Total Paid", "Outstanding"])
+
+    # Get unique term/year combinations
+    assessments = db.session.query(
+        FeeAssessment.term,
+        FeeAssessment.year,
+        func.sum(FeeAssessment.amount).label('total_assessed')
+    ).group_by(FeeAssessment.term, FeeAssessment.year) \
+        .order_by(desc(FeeAssessment.year), desc(FeeAssessment.term)).all()
+
+    for assessment in assessments:
+        # Get total payments for this term/year
+        total_paid = db.session.query(func.sum(PaymentAllocation.amount)) \
+                         .join(FeeAssessment) \
+                         .filter(FeeAssessment.term == assessment.term,
+                                 FeeAssessment.year == assessment.year).scalar() or 0
+
+        outstanding = float(assessment.total_assessed) - float(total_paid)
+
+        ws.append([
+            f"Term {assessment.term}",
+            assessment.year,
+            float(assessment.total_assessed),
+            float(total_paid),
+            outstanding
+        ])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Fee_Collection_Report_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/outstanding-report')
+@login_required
+def download_outstanding_report():
+    """Download outstanding balances report"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Outstanding Balances"
+
+    ws.append(["OUTSTANDING BALANCES REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Admission No", "Student Name", "Class", "Parent Name", "Parent Phone", "Outstanding Balance"])
+
+    students = Student.query.filter_by(is_active=True).all()
+    students_with_balance = []
+
+    for student in students:
+        balance = student.get_current_balance()
+        if balance > 0:
+            students_with_balance.append({
+                'student': student,
+                'balance': balance
+            })
+
+    # Sort by balance descending
+    students_with_balance.sort(key=lambda x: x['balance'], reverse=True)
+
+    total_outstanding = 0
+    for item in students_with_balance:
+        student = item['student']
+        balance = item['balance']
+        total_outstanding += float(balance)
+
+        ws.append([
+            student.admission_no,
+            student.full_name,
+            f"{student.class_obj.name}{'-' + student.stream.name if student.stream else ''}",
+            student.parent_name,
+            student.parent_phone,
+            float(balance)
+        ])
+
+    ws.append([])
+    ws.append(["TOTAL OUTSTANDING:", "", "", "", "", total_outstanding])
+    ws.append(["Number of Students:", len(students_with_balance)])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Outstanding_Balances_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/payment-history')
+@login_required
+def download_payment_history():
+    """Download complete payment history"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Payment History"
+
+    ws.append(["PAYMENT HISTORY REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Receipt No", "Date", "Student Name", "Admission No", "Class",
+               "Amount", "Payment Mode", "M-Pesa/Bank Ref", "Processed By"])
+
+    payments = Payment.query.order_by(desc(Payment.payment_date)).all()
+
+    total_amount = 0
+    for payment in payments:
+        total_amount += float(payment.amount)
+
+        ref = ""
+        if payment.mpesa_code:
+            ref = payment.mpesa_code
+        elif payment.bank_slip_number:
+            ref = payment.bank_slip_number
+        elif payment.cheque_number:
+            ref = payment.cheque_number
+
+        ws.append([
+            payment.receipt_number,
+            payment.payment_date.strftime('%Y-%m-%d'),
+            payment.student.full_name,
+            payment.student.admission_no,
+            f"{payment.student.class_obj.name}{'-' + payment.student.stream.name if payment.student.stream else ''}",
+            float(payment.amount),
+            payment.payment_mode.value,
+            ref,
+            payment.processor.name if payment.processor else "SYSTEM"
+        ])
+
+    ws.append([])
+    ws.append(["TOTAL PAYMENTS:", "", "", "", "", total_amount])
+    ws.append(["Number of Transactions:", len(payments)])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Payment_History_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/expense-report')
+@login_required
+def download_expense_report():
+    """Download expense report"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Expenses"
+
+    ws.append(["EXPENSE REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Date", "Category", "Description", "Amount", "Payment Method",
+               "Reference", "Supplier", "Approved By"])
+
+    expenses = Expense.query.order_by(desc(Expense.expense_date)).all()
+
+    total_expenses = 0
+    category_totals = {}
+
+    for expense in expenses:
+        total_expenses += float(expense.amount)
+
+        category_name = expense.category.name
+        if category_name not in category_totals:
+            category_totals[category_name] = 0
+        category_totals[category_name] += float(expense.amount)
+
+        ws.append([
+            expense.expense_date.strftime('%Y-%m-%d'),
+            expense.category.name,
+            expense.description,
+            float(expense.amount),
+            expense.payment_method.value if expense.payment_method else "N/A",
+            expense.reference_number or "",
+            expense.supplier_name or "",
+            expense.approved_by or ""
+        ])
+
+    ws.append([])
+    ws.append(["TOTAL EXPENSES:", "", "", total_expenses])
+    ws.append([])
+    ws.append(["BREAKDOWN BY CATEGORY:"])
+    ws.append(["Category", "Amount"])
+
+    for category, amount in sorted(category_totals.items(), key=lambda x: x[1], reverse=True):
+        ws.append([category, amount])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Expense_Report_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/student-register')
+@login_required
+def download_student_register():
+    """Download complete student register"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Student Register"
+
+    ws.append(["COMPLETE STUDENT REGISTER"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Admission No", "First Name", "Last Name", "Date of Birth", "Class", "Stream",
+               "Student Type", "Parent Name", "Parent Phone", "Parent Email",
+               "Vehicle", "Transport Distance", "Admission Date", "Status"])
+
+    students = Student.query.order_by(Student.admission_no).all()
+
+    for student in students:
+        ws.append([
+            student.admission_no,
+            student.first_name,
+            student.last_name,
+            student.date_of_birth.strftime('%Y-%m-%d') if student.date_of_birth else "N/A",
+            student.class_obj.name,
+            student.stream.name if student.stream else "N/A",
+            student.student_type.value,
+            student.parent_name,
+            student.parent_phone,
+            student.parent_email or "",
+            student.vehicle.registration_number if student.vehicle else "N/A",
+            float(student.transport_distance_km) if student.transport_distance_km else 0,
+            student.admission_date.strftime('%Y-%m-%d') if student.admission_date else "N/A",
+            "Active" if student.is_active else "Inactive"
+        ])
+
+    ws.append([])
+    ws.append(["TOTAL STUDENTS:", len(students)])
+    ws.append(["Active:", len([s for s in students if s.is_active])])
+    ws.append(["Inactive:", len([s for s in students if not s.is_active])])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Student_Register_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/all-student-statements')
+@login_required
+def download_all_student_statements():
+    """Download detailed fee statements for all students"""
+    wb = create_excel_workbook()
+    wb.remove(wb.active)
+
+    # Summary Sheet
+    ws_summary = wb.create_sheet("Summary")
+    ws_summary.append(["STUDENT FEE STATEMENTS"])
+    ws_summary.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws_summary.append([])
+    ws_summary.append(["Admission No", "Student Name", "Class", "Total Assessed",
+                       "Total Paid", "Balance"])
+
+    students = Student.query.filter_by(is_active=True).order_by(Student.admission_no).all()
+
+    grand_total_assessed = 0
+    grand_total_paid = 0
+
+    for student in students:
+        # Calculate totals
+        total_assessed = db.session.query(func.sum(FeeAssessment.amount)) \
+                             .filter_by(student_id=student.id).scalar() or 0
+
+        total_paid = db.session.query(func.sum(PaymentAllocation.amount)) \
+                         .join(FeeAssessment) \
+                         .filter(FeeAssessment.student_id == student.id).scalar() or 0
+
+        balance = float(total_assessed) - float(total_paid)
+
+        grand_total_assessed += float(total_assessed)
+        grand_total_paid += float(total_paid)
+
+        ws_summary.append([
+            student.admission_no,
+            student.full_name,
+            f"{student.class_obj.name}{'-' + student.stream.name if student.stream else ''}",
+            float(total_assessed),
+            float(total_paid),
+            balance
+        ])
+
+    ws_summary.append([])
+    ws_summary.append(["TOTALS:", "", "", grand_total_assessed, grand_total_paid,
+                       grand_total_assessed - grand_total_paid])
+
+    style_header_row(ws_summary, 4)
+    auto_adjust_column_width(ws_summary)
+
+    # Create individual statement for each student (limit to first 50 to avoid huge files)
+    for student in students[:50]:
+        sheet_name = f"{student.admission_no}"[:31]
+        ws = wb.create_sheet(sheet_name)
+
+        ws.append([f"FEE STATEMENT - {student.full_name}"])
+        ws.append([f"Admission No: {student.admission_no}"])
+        ws.append([f"Class: {student.class_obj.name}{'-' + student.stream.name if student.stream else ''}"])
+        ws.append([])
+
+        # Assessments
+        ws.append(["ASSESSMENTS"])
+        ws.append(["Fee Item", "Term", "Year", "Amount", "Date"])
+
+        assessments = FeeAssessment.query.filter_by(student_id=student.id) \
+            .order_by(FeeAssessment.year, FeeAssessment.term).all()
+
+        for assessment in assessments:
+            ws.append([
+                assessment.fee_item.name,
+                assessment.term,
+                assessment.year,
+                float(assessment.amount),
+                assessment.assessed_date.strftime('%Y-%m-%d')
+            ])
+
+        ws.append([])
+
+        # Payments
+        ws.append(["PAYMENTS"])
+        ws.append(["Receipt No", "Date", "Amount", "Mode"])
+
+        payments = Payment.query.filter_by(student_id=student.id) \
+            .order_by(Payment.payment_date).all()
+
+        for payment in payments:
+            ws.append([
+                payment.receipt_number,
+                payment.payment_date.strftime('%Y-%m-%d'),
+                float(payment.amount),
+                payment.payment_mode.value
+            ])
+
+        ws.append([])
+
+        # Summary
+        total_assessed = sum(float(a.amount) for a in assessments)
+        total_paid = sum(float(p.amount) for p in payments)
+
+        ws.append(["SUMMARY"])
+        ws.append(["Total Assessed:", total_assessed])
+        ws.append(["Total Paid:", total_paid])
+        ws.append(["Balance:", total_assessed - total_paid])
+
+        style_header_row(ws, 6)
+        style_header_row(ws, len(assessments) + 9)
+        auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'All_Student_Statements_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/student-type-report')
+@login_required
+def download_student_type_report():
+    """Download boarders vs day students analysis"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Student Type Analysis"
+
+    ws.append(["BOARDERS VS DAY STUDENTS REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+
+    # Overall summary
+    total_students = Student.query.filter_by(is_active=True).count()
+    day_students = Student.query.filter_by(is_active=True, student_type=StudentType.DAY).count()
+    boarders = Student.query.filter_by(is_active=True, student_type=StudentType.BOARDER).count()
+
+    ws.append(["OVERALL SUMMARY"])
+    ws.append(["Category", "Count", "Percentage"])
+    ws.append(["Total Students", total_students, "100%"])
+    ws.append(
+        ["Day Students", day_students, f"{(day_students / total_students * 100) if total_students > 0 else 0:.1f}%"])
+    ws.append(["Boarders", boarders, f"{(boarders / total_students * 100) if total_students > 0 else 0:.1f}%"])
+    ws.append([])
+
+    # Breakdown by class
+    ws.append(["BREAKDOWN BY CLASS"])
+    ws.append(["Class", "Total", "Day Students", "Boarders"])
+
+    classes = Class.query.all()
+    for class_obj in classes:
+        total = Student.query.filter_by(class_id=class_obj.id, is_active=True).count()
+        day = Student.query.filter_by(class_id=class_obj.id, is_active=True,
+                                      student_type=StudentType.DAY).count()
+        board = Student.query.filter_by(class_id=class_obj.id, is_active=True,
+                                        student_type=StudentType.BOARDER).count()
+
+        ws.append([class_obj.name, total, day, board])
+
+    style_header_row(ws, 5)
+    style_header_row(ws, 11)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Student_Type_Analysis_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/vehicle-revenue')
+@login_required
+def download_vehicle_revenue():
+    """Download vehicle revenue report"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Vehicle Revenue"
+
+    ws.append(["VEHICLE REVENUE REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Registration", "Make/Model", "Driver", "Students", "Total Distance",
+               "Revenue Potential"])
+
+    vehicles = Vehicle.query.filter_by(is_active=True).all()
+
+    total_revenue = 0
+    for vehicle in vehicles:
+        students = Student.query.filter_by(vehicle_id=vehicle.id, is_active=True).all()
+        total_distance = sum(float(s.transport_distance_km or 0) for s in students)
+
+        # Calculate potential revenue (simplified - using current year/term 1)
+        current_year = AcademicYear.query.filter_by(is_current=True).first()
+        revenue = 0
+
+        if current_year:
+            transport_fee = FeeItem.query.filter_by(code='TRANSPORT').first()
+            if transport_fee:
+                rate = FeeRate.query.filter_by(
+                    fee_item_id=transport_fee.id,
+                    year=current_year.year,
+                    term=1,
+                    is_active=True
+                ).first()
+
+                if rate and rate.rate_per_km:
+                    revenue = total_distance * float(rate.rate_per_km) * 3  # 3 terms
+
+        total_revenue += revenue
+
+        ws.append([
+            vehicle.registration_number,
+            f"{vehicle.make} {vehicle.model}",
+            vehicle.driver_name,
+            len(students),
+            total_distance,
+            revenue
+        ])
+
+    ws.append([])
+    ws.append(["TOTAL REVENUE POTENTIAL:", "", "", "", "", total_revenue])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Vehicle_Revenue_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/transport-report')
+@login_required
+def download_transport_report():
+    """Download transport assignments report"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Transport Assignments"
+
+    ws.append(["TRANSPORT ASSIGNMENTS REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Student Name", "Admission No", "Class", "Vehicle", "Driver",
+               "Distance (km)", "Parent Contact"])
+
+    students = Student.query.filter(Student.vehicle_id.isnot(None),
+                                    Student.is_active == True).all()
+
+    for student in students:
+        ws.append([
+            student.full_name,
+            student.admission_no,
+            f"{student.class_obj.name}{'-' + student.stream.name if student.stream else ''}",
+            student.vehicle.registration_number,
+            student.vehicle.driver_name,
+            float(student.transport_distance_km) if student.transport_distance_km else 0,
+            student.parent_phone
+        ])
+
+    ws.append([])
+    ws.append(["TOTAL STUDENTS USING TRANSPORT:", len(students)])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Transport_Assignments_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/promotion-report')
+@login_required
+def download_promotion_report():
+    """Download promotion history report"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Promotion History"
+
+    ws.append(["STUDENT PROMOTION HISTORY"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Student Name", "Admission No", "From Class", "From Stream",
+               "To Class", "To Stream", "Academic Year", "Status", "Date"])
+
+    promotions = StudentPromotion.query.order_by(desc(StudentPromotion.promotion_date)).all()
+
+    for promotion in promotions:
+        ws.append([
+            promotion.student.full_name,
+            promotion.student.admission_no,
+            promotion.from_class.name if promotion.from_class else "N/A",
+            promotion.from_stream.name if promotion.from_stream else "N/A",
+            promotion.to_class.name,
+            promotion.to_stream.name if promotion.to_stream else "N/A",
+            promotion.academic_year,
+            promotion.status.value,
+            promotion.promotion_date.strftime('%Y-%m-%d')
+        ])
+
+    ws.append([])
+    ws.append(["TOTAL PROMOTIONS:", len(promotions)])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Promotion_History_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/download/class-summary')
+@login_required
+def download_class_summary():
+    """Download class summary report"""
+    wb = create_excel_workbook()
+    ws = wb.active
+    ws.title = "Class Summary"
+
+    ws.append(["CLASS SUMMARY REPORT"])
+    ws.append([f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.append([])
+    ws.append(["Class", "Streams", "Total Students", "Day Students", "Boarders",
+               "With Transport", "Average Balance"])
+
+    classes = Class.query.all()
+
+    for class_obj in classes:
+        streams = Stream.query.filter_by(class_id=class_obj.id).count()
+        students = Student.query.filter_by(class_id=class_obj.id, is_active=True).all()
+
+        day = len([s for s in students if s.student_type == StudentType.DAY])
+        boarders = len([s for s in students if s.student_type == StudentType.BOARDER])
+        with_transport = len([s for s in students if s.vehicle_id])
+
+        # Calculate average balance
+        total_balance = sum(float(s.get_current_balance()) for s in students)
+        avg_balance = total_balance / len(students) if students else 0
+
+        ws.append([
+            class_obj.name,
+            streams,
+            len(students),
+            day,
+            boarders,
+            with_transport,
+            avg_balance
+        ])
+
+    style_header_row(ws, 4)
+    auto_adjust_column_width(ws)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'Class_Summary_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    )
+
+
+@app.route('/reports/fee-collection')
+@login_required
+def view_fee_collection_report():
+    """View fee collection report in browser"""
+    # Get unique term/year combinations
+    assessments = db.session.query(
+        FeeAssessment.term,
+        FeeAssessment.year,
+        func.sum(FeeAssessment.amount).label('total_assessed')
+    ).group_by(FeeAssessment.term, FeeAssessment.year) \
+        .order_by(desc(FeeAssessment.year), desc(FeeAssessment.term)).all()
+
+    collection_data = []
+    for assessment in assessments:
+        total_paid = db.session.query(func.sum(PaymentAllocation.amount)) \
+                         .join(FeeAssessment) \
+                         .filter(FeeAssessment.term == assessment.term,
+                                 FeeAssessment.year == assessment.year).scalar() or 0
+
+        outstanding = float(assessment.total_assessed) - float(total_paid)
+
+        collection_data.append({
+            'term': assessment.term,
+            'year': assessment.year,
+            'assessed': float(assessment.total_assessed),
+            'paid': float(total_paid),
+            'outstanding': outstanding
+        })
+
+    return render_template('reports/fee_collection.html', collection_data=collection_data)
+
+
+@app.route('/reports/custom-generate', methods=['POST'])
+@login_required
+def generate_custom_report():
+    """Generate custom report based on user selection"""
+    report_type = request.form.get('report_type')
+    date_range = request.form.get('date_range')
+
+    # Redirect to appropriate download route based on selection
+    if report_type == 'students':
+        return redirect(url_for('download_student_register'))
+    elif report_type == 'payments':
+        return redirect(url_for('download_payment_history'))
+    elif report_type == 'assessments':
+        return redirect(url_for('download_fee_collection_report'))
+    elif report_type == 'expenses':
+        return redirect(url_for('download_expense_report'))
+    else:
+        flash('Invalid report type selected', 'error')
+        return redirect(url_for('reports'))
 
 # ===========================
 #  MAIN APPLICATION

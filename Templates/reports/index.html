@@ -1,355 +1,405 @@
 {% extends "base.html" %}
 
-{% block title %}Reports - EduManage Pro{% endblock %}
+{% block title %}Reports & Analytics - EduManage Pro{% endblock %}
 
 {% block page_title %}Reports & Analytics{% endblock %}
 
+{% block page_actions %}
+<a href="{{ url_for('download_all_data') }}" class="btn btn-success">
+    <i class="fas fa-download me-2"></i>Download All Data
+</a>
+{% endblock %}
+
 {% block content %}
 <div class="row">
-    <!-- Fee Reports -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-money-bill-wave me-2 text-success"></i>
-                    Fee Reports
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">Generate comprehensive fee collection and outstanding balance reports</p>
-
-                <div class="d-grid gap-3">
-                    <a href="{{ url_for('class_summary_report') }}" class="btn btn-outline-primary d-flex align-items-center">
-                        <i class="fas fa-chart-pie me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Class Summary Report</div>
-                            <small class="text-muted">Fee collection summary by class and stream</small>
-                        </div>
-                    </a>
-
-                    <a href="{{ url_for('outstanding_fees_report') }}" class="btn btn-outline-warning d-flex align-items-center">
-                        <i class="fas fa-exclamation-triangle me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Outstanding Fees Report</div>
-                            <small class="text-muted">Students with pending fee payments</small>
-                        </div>
-                    </a>
-
-                    <a href="{{ url_for('student_statement', student_id=1) }}" class="btn btn-outline-info d-flex align-items-center"
-                       onclick="return promptForStudent(event, 'statement')">
-                        <i class="fas fa-file-alt me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Student Statement</div>
-                            <small class="text-muted">Detailed fee statement for individual student</small>
-                        </div>
-                    </a>
-                </div>
+    <!-- Quick Stats -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-graduate fa-3x mb-3" style="color: #667eea;"></i>
+                <h3 class="mb-0">{{ Student.query.filter_by(is_active=True).count() }}</h3>
+                <p class="text-muted mb-0">Active Students</p>
             </div>
         </div>
     </div>
 
-    <!-- Transport Reports -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-bus me-2 text-primary"></i>
-                    Transport Reports
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">Analyze transport revenue and vehicle utilization</p>
-
-                <div class="d-grid gap-3">
-                    <a href="{{ url_for('vehicle_revenue_report') }}" class="btn btn-outline-primary d-flex align-items-center">
-                        <i class="fas fa-bus-alt me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Vehicle Revenue Report</div>
-                            <small class="text-muted">Revenue analysis by vehicle and route</small>
-                        </div>
-                    </a>
-
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-route me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Route Efficiency Report</div>
-                            <small class="text-muted">Coming soon - route optimization analysis</small>
-                        </div>
-                    </button>
-
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-users me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Transport Utilization</div>
-                            <small class="text-muted">Coming soon - student transport usage</small>
-                        </div>
-                    </button>
-                </div>
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-credit-card fa-3x mb-3" style="color: #48bb78;"></i>
+                <h3 class="mb-0">{{ Payment.query.count() }}</h3>
+                <p class="text-muted mb-0">Total Payments</p>
             </div>
         </div>
     </div>
 
-    <!-- Financial Reports -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-chart-line me-2 text-info"></i>
-                    Financial Reports
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">Comprehensive financial analysis and cash flow reports</p>
-
-                <div class="d-grid gap-3">
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-coins me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Income vs Expenses</div>
-                            <small class="text-muted">Coming soon - profit/loss analysis</small>
-                        </div>
-                    </button>
-
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-calendar-check me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Monthly Financial Summary</div>
-                            <small class="text-muted">Coming soon - monthly breakdown</small>
-                        </div>
-                    </button>
-
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-credit-card me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Payment Method Analysis</div>
-                            <small class="text-muted">Coming soon - payment trends</small>
-                        </div>
-                    </button>
-                </div>
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-bus fa-3x mb-3" style="color: #f59e0b;"></i>
+                <h3 class="mb-0">{{ Vehicle.query.filter_by(is_active=True).count() }}</h3>
+                <p class="text-muted mb-0">Active Vehicles</p>
             </div>
         </div>
     </div>
 
-    <!-- Student Reports -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-user-graduate me-2 text-success"></i>
-                    Student Reports
-                </h5>
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-receipt fa-3x mb-3" style="color: #ef4444;"></i>
+                <h3 class="mb-0">{{ Expense.query.count() }}</h3>
+                <p class="text-muted mb-0">Total Expenses</p>
             </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">Student enrollment and demographic analysis</p>
+        </div>
+    </div>
+</div>
 
-                <div class="d-grid gap-3">
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-chart-bar me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Enrollment Statistics</div>
-                            <small class="text-muted">Coming soon - enrollment trends</small>
+<!-- Financial Reports -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-dollar-sign me-2"></i>Financial Reports
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-file-invoice-dollar fa-2x" style="color: #667eea;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Fee Collection Summary</h6>
+                        <p class="text-muted small mb-2">Overview of all fee collections by term/year</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_fee_collection_report') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('view_fee_collection_report') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
                         </div>
-                    </button>
+                    </div>
+                </div>
+            </div>
 
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-level-up-alt me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Promotion Analysis</div>
-                            <small class="text-muted">Coming soon - promotion success rates</small>
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle fa-2x" style="color: #f59e0b;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Outstanding Balances</h6>
+                        <p class="text-muted small mb-2">Students with pending fee payments</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_outstanding_report') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('outstanding_fees_report') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
                         </div>
-                    </button>
+                    </div>
+                </div>
+            </div>
 
-                    <button class="btn btn-outline-secondary d-flex align-items-center" disabled>
-                        <i class="fas fa-percentage me-3"></i>
-                        <div class="text-start">
-                            <div class="fw-bold">Boarder vs Day Students</div>
-                            <small class="text-muted">Coming soon - student type analysis</small>
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-history fa-2x" style="color: #10b981;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Payment History</h6>
+                        <p class="text-muted small mb-2">Complete payment transactions log</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_payment_history') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('payment_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
                         </div>
-                    </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-receipt fa-2x" style="color: #ef4444;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Expense Report</h6>
+                        <p class="text-muted small mb-2">Detailed breakdown of all expenses</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_expense_report') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('expense_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Quick Report Generation -->
-<div class="card mt-4">
+<!-- Student Reports -->
+<div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">
-            <i class="fas fa-lightning-bolt me-2 text-warning"></i>
-            Quick Report Generator
+            <i class="fas fa-user-graduate me-2"></i>Student Reports
         </h5>
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-8">
-                <form class="row g-3" id="quick-report-form">
-                    <div class="col-md-3">
-                        <select class="form-select" id="report-type">
-                            <option value="">Select Report Type</option>
-                            <option value="class-summary">Class Summary</option>
-                            <option value="outstanding">Outstanding Fees</option>
-                            <option value="vehicle-revenue">Vehicle Revenue</option>
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-list-ul fa-2x" style="color: #667eea;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Complete Student Register</h6>
+                        <p class="text-muted small mb-2">All students with full details</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_student_register') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('student_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-graduation-cap fa-2x" style="color: #8b5cf6;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Students by Class</h6>
+                        <p class="text-muted small mb-2">Class-wise student breakdown with tabs</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_students_by_class') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('class_summary_report') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chart-bar fa-2x" style="color: #06b6d4;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Student Balance Statements</h6>
+                        <p class="text-muted small mb-2">Individual fee statements for all students</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_all_student_statements') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-check fa-2x" style="color: #10b981;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Boarders vs Day Students</h6>
+                        <p class="text-muted small mb-2">Analysis by student type</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_student_type_report') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transport Reports -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-bus me-2"></i>Transport Reports
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-bus-alt fa-2x" style="color: #f59e0b;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Vehicle Revenue Report</h6>
+                        <p class="text-muted small mb-2">Revenue analysis per vehicle</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_vehicle_revenue') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('vehicle_revenue_report') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-route fa-2x" style="color: #3b82f6;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Transport Assignments</h6>
+                        <p class="text-muted small mb-2">All students using transport</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_transport_report') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Academic Reports -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-calendar-alt me-2"></i>Academic Reports
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-level-up-alt fa-2x" style="color: #8b5cf6;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Promotion History</h6>
+                        <p class="text-muted small mb-2">Student promotions and class changes</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_promotion_report') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('promotion_management') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="d-flex align-items-center p-3 border rounded">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chart-pie fa-2x" style="color: #ec4899;"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-1">Class Summary Report</h6>
+                        <p class="text-muted small mb-2">Overview of all classes and streams</p>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ url_for('download_class_summary') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-1"></i>Excel
+                            </a>
+                            <a href="{{ url_for('class_summary_report') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Report Generator -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-cog me-2"></i>Custom Report Generator
+        </h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('generate_custom_report') }}" method="POST">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Report Type</label>
+                        <select name="report_type" class="form-select" required>
+                            <option value="">Select Type...</option>
+                            <option value="students">Students</option>
+                            <option value="payments">Payments</option>
+                            <option value="assessments">Fee Assessments</option>
+                            <option value="expenses">Expenses</option>
                         </select>
                     </div>
+                </div>
 
-                    <div class="col-md-2">
-                        <select class="form-select" id="report-term">
-                            <option value="">All Terms</option>
-                            <option value="1">Term 1</option>
-                            <option value="2">Term 2</option>
-                            <option value="3">Term 3</option>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <select name="date_range" class="form-select">
+                            <option value="all">All Time</option>
+                            <option value="current_year">Current Year</option>
+                            <option value="current_term">Current Term</option>
+                            <option value="last_month">Last Month</option>
+                            <option value="custom">Custom Range</option>
                         </select>
                     </div>
+                </div>
 
-                    <div class="col-md-2">
-                        <input type="number" class="form-control" id="report-year" placeholder="Year"
-                               min="2020" max="2050" value="2024">
-                    </div>
-
-                    <div class="col-md-3">
-                        <select class="form-select" id="report-class">
-                            <option value="">All Classes</option>
-                            <!-- Classes will be loaded dynamically -->
-                        </select>
-                    </div>
-
-                    <div class="col-md-2">
-                        <button type="button" class="btn btn-primary w-100" id="generate-report">
-                            <i class="fas fa-play me-1"></i>Generate
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-download me-2"></i>Generate Report
                         </button>
                     </div>
-                </form>
-            </div>
-            <div class="col-md-4">
-                <div class="alert alert-info mb-0">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <small>Select report type and filters, then click Generate to create a custom report.</small>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
-<!-- Export Options -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="fas fa-download me-2 text-secondary"></i>
-            Export & Print Options
-        </h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6 class="fw-bold mb-3">Available Export Formats</h6>
-                <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-outline-danger btn-sm" disabled>
-                        <i class="fas fa-file-pdf me-1"></i>PDF
-                    </button>
-                    <button class="btn btn-outline-success btn-sm" disabled>
-                        <i class="fas fa-file-excel me-1"></i>Excel
-                    </button>
-                    <button class="btn btn-outline-info btn-sm" disabled>
-                        <i class="fas fa-file-csv me-1"></i>CSV
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" disabled>
-                        <i class="fas fa-print me-1"></i>Print
-                    </button>
-                </div>
-                <small class="text-muted d-block mt-2">Export functionality coming soon</small>
-            </div>
-            <div class="col-md-6">
-                <h6 class="fw-bold mb-3">Scheduled Reports</h6>
-                <p class="text-muted mb-2">Set up automated report generation and delivery</p>
-                <button class="btn btn-outline-primary btn-sm" disabled>
-                    <i class="fas fa-calendar-plus me-1"></i>Schedule Reports
-                </button>
-                <small class="text-muted d-block mt-2">Feature coming in future update</small>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 $(document).ready(function() {
-    // Load classes for quick report filter
-    loadClasses();
+    // Add loading state to download buttons
+    $('a[href*="download"]').on('click', function() {
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.html('<i class="fas fa-spinner fa-spin me-1"></i>Generating...');
+        btn.addClass('disabled');
 
-    // Handle quick report generation
-    $('#generate-report').click(function() {
-        const reportType = $('#report-type').val();
-        const term = $('#report-term').val();
-        const year = $('#report-year').val();
-        const classId = $('#report-class').val();
-
-        if (!reportType) {
-            alert('Please select a report type');
-            return;
-        }
-
-        // Build URL with parameters
-        let url = '';
-        const params = new URLSearchParams();
-
-        if (term) params.append('term', term);
-        if (year) params.append('year', year);
-        if (classId) params.append('class_id', classId);
-
-        switch (reportType) {
-            case 'class-summary':
-                url = '{{ url_for("class_summary_report") }}';
-                break;
-            case 'outstanding':
-                url = '{{ url_for("outstanding_fees_report") }}';
-                break;
-            case 'vehicle-revenue':
-                url = '{{ url_for("vehicle_revenue_report") }}';
-                break;
-            default:
-                alert('Invalid report type selected');
-                return;
-        }
-
-        const queryString = params.toString();
-        window.location.href = url + (queryString ? '?' + queryString : '');
+        // Re-enable after 5 seconds
+        setTimeout(function() {
+            btn.html(originalHtml);
+            btn.removeClass('disabled');
+        }, 5000);
     });
-
-    function loadClasses() {
-        // In a real application, this would fetch from an API
-        const sampleClasses = [
-            { id: 1, name: 'Form 1' },
-            { id: 2, name: 'Form 2' },
-            { id: 3, name: 'Form 3' },
-            { id: 4, name: 'Form 4' }
-        ];
-
-        const classSelect = $('#report-class');
-        sampleClasses.forEach(function(cls) {
-            classSelect.append(`<option value="${cls.id}">${cls.name}</option>`);
-        });
-    }
-
-    // Set current year as default
-    const currentYear = new Date().getFullYear();
-    $('#report-year').val(currentYear);
 });
-
-// Function to prompt for student ID (used by student statement link)
-function promptForStudent(event, type) {
-    event.preventDefault();
-
-    const studentId = prompt('Enter Student Admission Number or ID:');
-    if (studentId) {
-        if (type === 'statement') {
-            // In a real app, you'd search for the student first
-            window.location.href = `{{ url_for('student_statement', student_id=1) }}`.replace('1', studentId);
-        }
-    }
-    return false;
-}
 </script>
 {% endblock %}
-

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Fee Collection Report - EduManage Pro{% endblock %}
+
+{% block page_title %}Fee Collection Report{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('download_fee_collection_report') }}" class="btn btn-success">
+    <i class="fas fa-download me-2"></i>Download Excel
+</a>
+<a href="{{ url_for('reports') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Reports
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-file-invoice-dollar me-2"></i>Fee Collection Summary
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Term</th>
+                        <th>Year</th>
+                        <th class="text-end">Total Assessed</th>
+                        <th class="text-end">Total Paid</th>
+                        <th class="text-end">Outstanding</th>
+                        <th class="text-end">Collection %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in collection_data %}
+                        <tr>
+                            <td><strong>Term {{ item.term }}</strong></td>
+                            <td>{{ item.year }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(item.assessed) }}</td>
+                            <td class="text-end text-success">KSh {{ "{:,.2f}".format(item.paid) }}</td>
+                            <td class="text-end text-danger">KSh {{ "{:,.2f}".format(item.outstanding) }}</td>
+                            <td class="text-end">
+                                {% set percentage = (item.paid / item.assessed * 100) if item.assessed > 0 else 0 %}
+                                <span class="badge bg-{{ 'success' if percentage >= 80 else 'warning' if percentage >= 50 else 'danger' }}">
+                                    {{ "{:.1f}".format(percentage) }}%
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    {% set ns = namespace(grand_assessed=0, grand_paid=0) %}
+                    {% for item in collection_data %}
+                        {% set ns.grand_assessed = ns.grand_assessed + item.assessed %}
+                        {% set ns.grand_paid = ns.grand_paid + item.paid %}
+                    {% endfor %}
+                    <tr class="fw-bold">
+                        <td colspan="2">GRAND TOTAL</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(ns.grand_assessed) }}</td>
+                        <td class="text-end text-success">KSh {{ "{:,.2f}".format(ns.grand_paid) }}</td>
+                        <td class="text-end text-danger">KSh {{ "{:,.2f}".format(ns.grand_assessed - ns.grand_paid) }}</td>
+                        <td class="text-end">
+                            {% set total_percentage = (ns.grand_paid / ns.grand_assessed * 100) if ns.grand_assessed > 0 else 0 %}
+                            <span class="badge bg-{{ 'success' if total_percentage >= 80 else 'warning' if total_percentage >= 50 else 'danger' }}">
+                                {{ "{:.1f}".format(total_percentage) }}%
+                            </span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Visual Chart -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Collection Rate by Term</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="collectionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Revenue Breakdown</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Calculate grand totals for charts
+{% set ns = namespace(grand_assessed=0, grand_paid=0) %}
+{% for item in collection_data %}
+    {% set ns.grand_assessed = ns.grand_assessed + item.assessed %}
+    {% set ns.grand_paid = ns.grand_paid + item.paid %}
+{% endfor %}
+
+// Collection Rate Chart
+const collectionCtx = document.getElementById('collectionChart').getContext('2d');
+const collectionChart = new Chart(collectionCtx, {
+    type: 'bar',
+    data: {
+        labels: [
+            {% for item in collection_data %}
+                'Term {{ item.term }}/{{ item.year }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Collection Rate (%)',
+            data: [
+                {% for item in collection_data %}
+                    {{ (item.paid / item.assessed * 100) if item.assessed > 0 else 0 }},
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(102, 126, 234, 0.7)',
+            borderColor: 'rgba(102, 126, 234, 1)',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Revenue Breakdown Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+const revenueChart = new Chart(revenueCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Collected', 'Outstanding'],
+        datasets: [{
+            data: [
+                {{ ns.grand_paid }},
+                {{ ns.grand_assessed - ns.grand_paid }}
+            ],
+            backgroundColor: [
+                'rgba(72, 187, 120, 0.8)',
+                'rgba(245, 101, 101, 0.8)'
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += 'KSh ' + context.parsed.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        return label;
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
