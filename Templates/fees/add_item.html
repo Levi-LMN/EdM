@@ -1,159 +1,184 @@
 {% extends "base.html" %}
 
 {% block title %}Add Fee Item - EduManage Pro{% endblock %}
-
-{% block page_title %}Add Fee Item{% endblock %}
+{% block page_title %}Add New Fee Item{% endblock %}
 
 {% block page_actions %}
-<a href="{{ url_for('fee_management') }}" class="btn btn-outline-primary">
-    <i class="fas fa-arrow-left me-2"></i>Back to Fee Management
+<a href="{{ url_for('fees.index') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Fee Items
 </a>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8 col-xl-6 mx-auto">
+<div class="row justify-content-center">
+    <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-tag me-2"></i>
-                    Fee Item Information
-                </h5>
+                <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Fee Item Details</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" action="{{ url_for('fees.add_item') }}">
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Fee Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="name" name="name" required
-                                       placeholder="e.g., Tuition Fee">
-                                <div class="form-text">Descriptive name for this fee type</div>
-                            </div>
+                        <!-- Fee Name -->
+                        <div class="col-md-8 mb-3">
+                            <label for="name" class="form-label">Fee Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="name" class="form-control"
+                                   placeholder="e.g., Tuition Fee, Transport Fee" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="code" class="form-label">Fee Code <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="code" name="code" required
-                                       placeholder="e.g., TUITION" style="text-transform: uppercase;">
-                                <div class="form-text">Unique code (will be converted to uppercase)</div>
+
+                        <!-- Fee Code -->
+                        <div class="col-md-4 mb-3">
+                            <label for="code" class="form-label">Fee Code <span class="text-danger">*</span></label>
+                            <input type="text" name="code" id="code" class="form-control"
+                                   placeholder="e.g., TUITION" maxlength="20" required
+                                   style="text-transform: uppercase;">
+                            <small class="text-muted">Short unique code</small>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea name="description" id="description" class="form-control" rows="2"
+                                      placeholder="Brief description of this fee item"></textarea>
+                        </div>
+
+                        <!-- Fee Scope -->
+                        <div class="col-md-6 mb-3">
+                            <label for="scope" class="form-label">Fee Scope <span class="text-danger">*</span></label>
+                            <select name="scope" id="scope" class="form-select" required>
+                                <option value="">Select Scope</option>
+                                <option value="UNIVERSAL">Universal - All Students</option>
+                                <option value="CLASS_LEVEL">Class Level - Per Class</option>
+                                <option value="STREAM_LEVEL">Stream Level - Per Stream</option>
+                                <option value="INDIVIDUAL">Individual - Manually Assigned</option>
+                            </select>
+                            <small class="text-muted">How this fee applies to students</small>
+                        </div>
+
+                        <!-- Rate Type -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Rate Type</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_per_km" id="is_per_km" value="1">
+                                <label class="form-check-label" for="is_per_km">
+                                    <i class="fas fa-route me-1"></i>Per Kilometer Rate
+                                </label>
                             </div>
+                            <small class="text-muted">Check if this is a transport fee calculated per km</small>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3"
-                                  placeholder="Optional description of this fee item..."></textarea>
+                    <!-- Scope Explanations -->
+                    <div class="alert alert-info mb-3">
+                        <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Fee Scope Guide</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Universal:</strong> Same rate for everyone (e.g., exam fees)</li>
+                            <li><strong>Class Level:</strong> Different rates per class (e.g., tuition varies by form)</li>
+                            <li><strong>Stream Level:</strong> Different rates per stream (e.g., special programs)</li>
+                            <li><strong>Individual:</strong> Manually assign to specific students (e.g., special needs)</li>
+                        </ul>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="scope" class="form-label">Fee Scope <span class="text-danger">*</span></label>
-                                <select class="form-select" id="scope" name="scope" required onchange="updateScopeHelp()">
-                                    <option value="">Select scope...</option>
-                                    <option value="{{ FeeScope.UNIVERSAL.value }}">Universal - All Students</option>
-                                    <option value="{{ FeeScope.CLASS_LEVEL.value }}">Class Level - Per Class</option>
-                                    <option value="{{ FeeScope.STREAM_LEVEL.value }}">Stream Level - Per Stream</option>
-                                    <option value="{{ FeeScope.INDIVIDUAL.value }}">Individual - Manually Assigned</option>
-                                </select>
-                                <div id="scope-help" class="form-text">Select how this fee applies to students</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="is_per_km" name="is_per_km" onchange="updatePerKmHelp()">
-                                    <label class="form-check-label" for="is_per_km">
-                                        <strong>Distance-based Fee</strong>
-                                    </label>
-                                </div>
-                                <div id="perkm-help" class="form-text">Check if this fee is calculated per kilometer (transport fees)</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fee Examples Section -->
-                    <div class="alert alert-info">
-                        <h6><i class="fas fa-lightbulb me-2"></i>Common Fee Examples:</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong>Universal Fees:</strong>
-                                <ul class="mb-0">
-                                    <li>Registration Fee</li>
-                                    <li>Activity Fee</li>
-                                    <li>ID Card Fee</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <strong>Class/Stream Fees:</strong>
-                                <ul class="mb-0">
-                                    <li>Tuition Fee</li>
-                                    <li>Lab Fee</li>
-                                    <li>Books & Materials</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-md-6">
-                                <strong>Individual Fees:</strong>
-                                <ul class="mb-0">
-                                    <li>Transport Fee (per km)</li>
-                                    <li>Swimming Fee</li>
-                                    <li>Special Coaching</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Create Fee Item
-                        </button>
-                        <a href="{{ url_for('fee_management') }}" class="btn btn-outline-secondary">
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('fees.index') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-times me-2"></i>Cancel
                         </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Create Fee Item
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <!-- Common Fee Items Reference -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Common School Fee Items</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-2">Academic Fees</h6>
+                        <ul class="small">
+                            <li>Tuition Fee (TUITION) - Class Level</li>
+                            <li>Exam Fee (EXAM) - Universal</li>
+                            <li>Lab Fee (LAB) - Class Level</li>
+                            <li>Library Fee (LIBRARY) - Universal</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-2">Boarding & Services</h6>
+                        <ul class="small">
+                            <li>Boarding Fee (BOARDING) - Individual</li>
+                            <li>Meals Fee (MEALS) - Individual</li>
+                            <li>Transport Fee (TRANSPORT) - Individual, Per KM</li>
+                            <li>Activities Fee (ACTIVITIES) - Universal</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    function updateScopeHelp() {
-        const scope = document.getElementById('scope').value;
-        const helpDiv = document.getElementById('scope-help');
+// Auto-generate code from name
+document.getElementById('name').addEventListener('input', function() {
+    const codeInput = document.getElementById('code');
 
-        const helpTexts = {
-            'UNIVERSAL': 'This fee applies to ALL students in the school',
-            'CLASS_LEVEL': 'This fee applies to all students in specific classes (e.g., Form 1, Form 2)',
-            'STREAM_LEVEL': 'This fee applies to all students in specific streams (e.g., Form 1A, Form 1B)',
-            'INDIVIDUAL': 'This fee is manually assigned to individual students as needed'
-        };
+    if (!codeInput.value) {
+        let code = this.value
+            .toUpperCase()
+            .replace(/[^A-Z\s]/g, '')
+            .split(' ')
+            .filter(word => word.length > 0)
+            .map(word => word.substring(0, 4))
+            .join('_');
 
-        helpDiv.textContent = helpTexts[scope] || 'Select how this fee applies to students';
+        codeInput.value = code.substring(0, 20);
+    }
+});
+
+// Convert code to uppercase
+document.getElementById('code').addEventListener('input', function() {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+});
+
+// Show/hide per km checkbox based on scope
+document.getElementById('scope').addEventListener('change', function() {
+    const perKmCheckbox = document.getElementById('is_per_km');
+    const perKmContainer = perKmCheckbox.closest('.col-md-6');
+
+    if (this.value === 'UNIVERSAL') {
+        perKmContainer.style.opacity = '0.5';
+        perKmCheckbox.disabled = true;
+        perKmCheckbox.checked = false;
+    } else {
+        perKmContainer.style.opacity = '1';
+        perKmCheckbox.disabled = false;
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    const code = document.getElementById('code').value.trim();
+
+    if (name.length < 3) {
+        e.preventDefault();
+        alert('Fee name must be at least 3 characters long');
+        return false;
     }
 
-    function updatePerKmHelp() {
-        const isPerKm = document.getElementById('is_per_km').checked;
-        const helpDiv = document.getElementById('perkm-help');
-
-        if (isPerKm) {
-            helpDiv.innerHTML = '<strong>Distance-based:</strong> Fee will be calculated as (rate × distance in km)';
-            helpDiv.className = 'form-text text-primary';
-        } else {
-            helpDiv.textContent = 'Check if this fee is calculated per kilometer (transport fees)';
-            helpDiv.className = 'form-text';
-        }
+    if (code.length < 2) {
+        e.preventDefault();
+        alert('Fee code must be at least 2 characters long');
+        return false;
     }
-
-    // Auto-generate code from name
-    document.getElementById('name').addEventListener('input', function() {
-        const name = this.value;
-        const code = name.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
-        document.getElementById('code').value = code;
-    });
+});
 </script>
 {% endblock %}

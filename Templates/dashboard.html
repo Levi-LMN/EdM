@@ -3,10 +3,10 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block page_actions %}
-    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+    <a href="{{ url_for('students.add') }}" class="btn btn-primary">
         <i class="fas fa-user-plus me-2"></i>Add Student
     </a>
-    <a href="{{ url_for('add_payment', student_id=0) }}" class="btn btn-outline-primary">
+    <a href="{{ url_for('payments.add', student_id=0) }}" class="btn btn-outline-primary">
         <i class="fas fa-credit-card me-2"></i>Record Payment
     </a>
 {% endblock %}
@@ -93,7 +93,7 @@
                         </table>
                     </div>
                     <div class="text-end">
-                        <a href="{{ url_for('payment_list') }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ url_for('payments.list') }}" class="btn btn-outline-primary btn-sm">
                             View All Payments
                         </a>
                     </div>
@@ -126,7 +126,7 @@
                     </div>
                     {% endfor %}
                     <div class="text-end">
-                        <a href="{{ url_for('outstanding_fees_report') }}" class="btn btn-outline-danger btn-sm">
+                        <a href="{{ url_for('reports.outstanding_fees') }}" class="btn btn-outline-danger btn-sm">
                             View All Outstanding
                         </a>
                     </div>

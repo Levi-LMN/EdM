@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Payment - EduManage Pro{% endblock %}
+{% block page_title %}Edit Payment{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Edit Payment Record
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Warning Alert -->
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Warning:</strong> Editing payment records should be done carefully.
+                    All changes will be logged for audit purposes.
+                </div>
+
+                <!-- Current Payment Information -->
+                <div class="alert alert-info mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Receipt No:</strong> {{ payment.receipt_number }}<br>
+                            <strong>Student:</strong> {{ payment.student.full_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Current Amount:</strong> {{ payment.amount|currency }}<br>
+                            <strong>Date:</strong> {{ payment.payment_date.strftime('%d/%m/%Y') }}
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    <!-- Payment Details -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Amount (KSh) <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" class="form-control"
+                                   step="0.01" min="0" required
+                                   value="{{ payment.amount }}">
+                            <small class="text-muted">Current: {{ payment.amount|currency }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Payment Date <span class="text-danger">*</span></label>
+                            <input type="date" name="payment_date" class="form-control"
+                                   value="{{ payment.payment_date.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Payment Mode <span class="text-danger">*</span></label>
+                        <select name="payment_mode" id="payment_mode" class="form-select" required>
+                            {% for mode in PaymentMode %}
+                            <option value="{{ mode.value }}"
+                                    {% if payment.payment_mode == mode %}selected{% endif %}>
+                                {{ mode.value }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Conditional Fields -->
+                    <div id="mpesa_field" class="mb-3"
+                         style="display: {% if payment.payment_mode.value == 'MPESA' %}block{% else %}none{% endif %};">
+                        <label class="form-label">M-Pesa Code</label>
+                        <input type="text" name="mpesa_code" class="form-control"
+                               value="{{ payment.mpesa_code or '' }}"
+                               placeholder="Enter M-Pesa transaction code">
+                    </div>
+
+                    <div id="bank_field" class="mb-3"
+                         style="display: {% if payment.payment_mode.value == 'BANK' %}block{% else %}none{% endif %};">
+                        <label class="form-label">Bank Slip Number</label>
+                        <input type="text" name="bank_slip_number" class="form-control"
+                               value="{{ payment.bank_slip_number or '' }}"
+                               placeholder="Enter bank slip number">
+                    </div>
+
+                    <div id="cheque_field" class="mb-3"
+                         style="display: {% if payment.payment_mode.value == 'CHEQUE' %}block{% else %}none{% endif %};">
+                        <label class="form-label">Cheque Number</label>
+                        <input type="text" name="cheque_number" class="form-control"
+                               value="{{ payment.cheque_number or '' }}"
+                               placeholder="Enter cheque number">
+                    </div>
+
+                    <!-- Edit Reason -->
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Edit <span class="text-danger">*</span></label>
+                        <textarea name="edit_reason" class="form-control" rows="3"
+                                  required placeholder="Provide a reason for editing this payment record"></textarea>
+                        <small class="text-muted">This reason will be logged in the audit trail</small>
+                    </div>
+
+                    {% if payment.allocations %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> This payment has {{ payment.allocations|length }} allocation(s).
+                        Changing the amount may require you to re-allocate the payment.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Update Payment
+                        </button>
+                        <a href="{{ url_for('payments.detail', payment_id=payment.id) }}"
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Audit Trail -->
+        {% if payment.notes and '[EDITED' in payment.notes %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Edit History</h6>
+            </div>
+            <div class="card-body">
+                <pre class="mb-0" style="white-space: pre-wrap;">{{ payment.notes }}</pre>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- Current Allocations -->
+        {% if payment.allocations %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Current Allocations</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for allocation in payment.allocations %}
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>{{ allocation.assessment.fee_item.name }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    T{{ allocation.assessment.term }}/{{ allocation.assessment.year }}
+                                </small>
+                            </div>
+                            <span class="badge bg-success">
+                                {{ allocation.amount|currency }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <strong>Total:</strong>
+                    <strong>{{ payment.allocations|sum(attribute='amount')|currency }}</strong>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Guidelines -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-book me-2"></i>Edit Guidelines</h6>
+            </div>
+            <div class="card-body">
+                <ul class="small mb-0">
+                    <li>Provide a clear reason for editing</li>
+                    <li>Verify all information before saving</li>
+                    <li>All changes are logged and auditable</li>
+                    <li>Receipt number cannot be changed</li>
+                    <li>Consider re-allocating if amount changes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    function updatePaymentModeFields() {
+        $('#mpesa_field, #bank_field, #cheque_field').hide();
+
+        const mode = $('#payment_mode').val();
+        if (mode === 'MPESA') {
+            $('#mpesa_field').show();
+        } else if (mode === 'BANK') {
+            $('#bank_field').show();
+        } else if (mode === 'CHEQUE') {
+            $('#cheque_field').show();
+        }
+    }
+
+    $('#payment_mode').on('change', updatePaymentModeFields);
+    updatePaymentModeFields();
+});
+</script>
+{% endblock %}

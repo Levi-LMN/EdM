@@ -511,12 +511,12 @@
                             <div class="nav-section-title">Main</div>
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                    <a class="nav-link" href="{{ url_for('dashboard.dashboard') }}">
                                         <i class="fas fa-home"></i>Dashboard
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('academic_management') }}">
+                                    <a class="nav-link" href="{{ url_for('academic.index') }}">
                                         <i class="fas fa-calendar-alt"></i>Academic Setup
                                     </a>
                                 </li>
@@ -527,17 +527,17 @@
                             <div class="nav-section-title">Students</div>
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('student_list') }}">
+                                    <a class="nav-link" href="{{ url_for('students.list') }}">
                                         <i class="fas fa-user-graduate"></i>All Students
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('add_student') }}">
+                                    <a class="nav-link" href="{{ url_for('students.add') }}">
                                         <i class="fas fa-user-plus"></i>Add Student
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('promotion_management') }}">
+                                    <a class="nav-link" href="{{ url_for('promotions.index') }}">
                                         <i class="fas fa-level-up-alt"></i>Promotions
                                     </a>
                                 </li>
@@ -548,12 +548,12 @@
                             <div class="nav-section-title">Fee Management</div>
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('fee_management') }}">
+                                    <a class="nav-link" href="{{ url_for('fees.index') }}">
                                         <i class="fas fa-tags"></i>Fee Items & Rates
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('assess_fees') }}">
+                                    <a class="nav-link" href="{{ url_for('fees.assess') }}">
                                         <i class="fas fa-file-invoice-dollar"></i>Assess Fees
                                     </a>
                                 </li>
@@ -564,7 +564,7 @@
                             <div class="nav-section-title">Payments</div>
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('payment_list') }}">
+                                    <a class="nav-link" href="{{ url_for('payments.list') }}">
                                         <i class="fas fa-credit-card"></i>All Payments
                                     </a>
                                 </li>
@@ -575,12 +575,12 @@
                             <div class="nav-section-title">Transport</div>
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('vehicle_list') }}">
+                                    <a class="nav-link" href="{{ url_for('vehicles.list') }}">
                                         <i class="fas fa-bus"></i>Vehicles
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('add_vehicle') }}">
+                                    <a class="nav-link" href="{{ url_for('vehicles.add') }}">
                                         <i class="fas fa-plus-circle"></i>Add Vehicle
                                     </a>
                                 </li>
@@ -591,17 +591,17 @@
                             <div class="nav-section-title">Expenses</div>
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('expense_list') }}">
+                                    <a class="nav-link" href="{{ url_for('expenses.list') }}">
                                         <i class="fas fa-receipt"></i>All Expenses
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('add_expense') }}">
+                                    <a class="nav-link" href="{{ url_for('expenses.add') }}">
                                         <i class="fas fa-plus-square"></i>Add Expense
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('add_expense_category') }}">
+                                    <a class="nav-link" href="{{ url_for('expenses.add_category') }}">
                                         <i class="fas fa-folder-plus"></i>Add Category
                                     </a>
                                 </li>
@@ -612,22 +612,22 @@
                             <div class="nav-section-title">Reports</div>
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('reports') }}">
+                                    <a class="nav-link" href="{{ url_for('reports.index') }}">
                                         <i class="fas fa-chart-line"></i>Reports
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('class_summary_report') }}">
+                                    <a class="nav-link" href="{{ url_for('reports.class_summary') }}">
                                         <i class="fas fa-chart-pie"></i>Class Summary
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('outstanding_fees_report') }}">
+                                    <a class="nav-link" href="{{ url_for('reports.outstanding_fees') }}">
                                         <i class="fas fa-exclamation-triangle"></i>Outstanding Fees
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('vehicle_revenue_report') }}">
+                                    <a class="nav-link" href="{{ url_for('reports.vehicle_revenue') }}">
                                         <i class="fas fa-bus-alt"></i>Vehicle Revenue
                                     </a>
                                 </li>
@@ -647,7 +647,7 @@
                             {% endif %}
                             <div class="user-name">{{ current_user.name }}</div>
                             <div class="user-role">{{ current_user.role.value }}</div>
-                            <a href="{{ url_for('logout') }}" class="btn logout-btn">
+                            <a href="{{ url_for('auth.logout') }}" class="btn logout-btn">
                                 <i class="fas fa-sign-out-alt me-1"></i>Logout
                             </a>
                         </div>

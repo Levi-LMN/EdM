@@ -1,129 +1,113 @@
 {% extends "base.html" %}
 
-{% block title %}Add Expense - EduManage Pro{% endblock %}
+{% block title %}Record Expense - EduManage Pro{% endblock %}
 {% block page_title %}Record New Expense{% endblock %}
 
 {% block page_actions %}
-<a href="{{ url_for('expense_list') }}" class="btn btn-outline-primary">
+<a href="{{ url_for('expenses.list') }}" class="btn btn-outline-secondary">
     <i class="fas fa-arrow-left me-2"></i>Back to Expenses
 </a>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-plus-circle me-2"></i>Expense Details
-                </h5>
+                <h5 class="mb-0"><i class="fas fa-plus-square me-2"></i>Expense Information</h5>
             </div>
             <div class="card-body">
-                <form method="POST" novalidate>
+                <form method="POST" action="{{ url_for('expenses.add') }}">
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="category_id" class="form-label">
-                                    <i class="fas fa-folder me-2"></i>Category *
-                                </label>
-                                <select class="form-select" id="category_id" name="category_id" required>
-                                    <option value="">Select Category</option>
-                                    {% for category in categories %}
-                                    <option value="{{ category.id }}">{{ category.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="invalid-feedback">Please select an expense category.</div>
-                            </div>
+                        <!-- Category -->
+                        <div class="col-md-6 mb-3">
+                            <label for="category_id" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select name="category_id" id="category_id" class="form-select" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }} ({{ category.code }})</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">
+                                Don't see your category? <a href="{{ url_for('expenses.add_category') }}" target="_blank">Add one here</a>
+                            </small>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="expense_date" class="form-label">
-                                    <i class="fas fa-calendar me-2"></i>Expense Date *
-                                </label>
-                                <input type="date" class="form-control" id="expense_date" name="expense_date"
-                                       value="{{ date.today().isoformat() }}" required>
-                                <div class="invalid-feedback">Please provide a valid expense date.</div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="form-group mb-3">
-                        <label for="description" class="form-label">
-                            <i class="fas fa-file-alt me-2"></i>Description *
-                        </label>
-                        <textarea class="form-control" id="description" name="description" rows="3"
-                                  placeholder="Describe what this expense was for..." required></textarea>
-                        <div class="invalid-feedback">Please provide a description for this expense.</div>
-                        <div class="form-text">Be specific about what was purchased or paid for</div>
-                    </div>
+                        <!-- Expense Date -->
+                        <div class="col-md-6 mb-3">
+                            <label for="expense_date" class="form-label">Expense Date <span class="text-danger">*</span></label>
+                            <input type="date" name="expense_date" id="expense_date" class="form-control"
+                                   value="{{ today }}" max="{{ today }}" required>
+                        </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="amount" class="form-label">
-                                    <i class="fas fa-money-bill me-2"></i>Amount (KSh) *
-                                </label>
-                                <input type="number" class="form-control" id="amount" name="amount"
-                                       step="0.01" min="0.01" placeholder="0.00" required>
-                                <div class="invalid-feedback">Please enter a valid amount greater than 0.</div>
-                            </div>
+                        <!-- Description -->
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                            <textarea name="description" id="description" class="form-control" rows="3"
+                                      placeholder="Enter detailed description of the expense" required></textarea>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="payment_method" class="form-label">
-                                    <i class="fas fa-credit-card me-2"></i>Payment Method
-                                </label>
-                                <select class="form-select" id="payment_method" name="payment_method">
-                                    <option value="">Select Method</option>
-                                    <option value="CASH">Cash</option>
-                                    <option value="MPESA">M-Pesa</option>
-                                    <option value="BANK">Bank Transfer</option>
-                                    <option value="CHEQUE">Cheque</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="supplier_name" class="form-label">
-                                    <i class="fas fa-store me-2"></i>Supplier/Vendor
-                                </label>
-                                <input type="text" class="form-control" id="supplier_name" name="supplier_name"
-                                       placeholder="Name of supplier or vendor">
-                            </div>
+                        <!-- Amount -->
+                        <div class="col-md-6 mb-3">
+                            <label for="amount" class="form-label">Amount (KES) <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" id="amount" class="form-control"
+                                   step="0.01" min="0.01" placeholder="0.00" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="reference_number" class="form-label">
-                                    <i class="fas fa-hashtag me-2"></i>Reference Number
-                                </label>
-                                <input type="text" class="form-control" id="reference_number" name="reference_number"
-                                       placeholder="Receipt number, invoice number, etc.">
-                            </div>
+
+                        <!-- Payment Method -->
+                        <div class="col-md-6 mb-3">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select name="payment_method" id="payment_method" class="form-select">
+                                <option value="">Select Payment Method</option>
+                                <option value="CASH">Cash</option>
+                                <option value="MPESA">M-Pesa</option>
+                                <option value="BANK">Bank Transfer</option>
+                                <option value="CHEQUE">Cheque</option>
+                            </select>
+                        </div>
+
+                        <!-- Reference Number -->
+                        <div class="col-md-6 mb-3">
+                            <label for="reference_number" class="form-label">Reference Number</label>
+                            <input type="text" name="reference_number" id="reference_number" class="form-control"
+                                   placeholder="Transaction ID, Receipt No, etc.">
+                            <small class="text-muted">M-Pesa code, bank reference, or receipt number</small>
+                        </div>
+
+                        <!-- Supplier Name -->
+                        <div class="col-md-6 mb-3">
+                            <label for="supplier_name" class="form-label">Supplier/Vendor Name</label>
+                            <input type="text" name="supplier_name" id="supplier_name" class="form-control"
+                                   placeholder="Name of supplier or vendor">
+                        </div>
+
+                        <!-- Approved By -->
+                        <div class="col-12 mb-3">
+                            <label for="approved_by" class="form-label">Approved By</label>
+                            <input type="text" name="approved_by" id="approved_by" class="form-control"
+                                   placeholder="Name of person who approved this expense">
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="col-12 mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea name="notes" id="notes" class="form-control" rows="2"
+                                      placeholder="Any additional information or comments"></textarea>
                         </div>
                     </div>
 
-                    <div class="form-group mb-3">
-                        <label for="approved_by" class="form-label">
-                            <i class="fas fa-user-check me-2"></i>Approved By
-                        </label>
-                        <input type="text" class="form-control" id="approved_by" name="approved_by"
-                               placeholder="Name of person who approved this expense">
-                        <div class="form-text">Optional: Name of the person who authorized this expense</div>
+                    <!-- Summary Box -->
+                    <div class="alert alert-info mb-3">
+                        <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Summary</h6>
+                        <div class="d-flex justify-content-between">
+                            <span>Total Expense Amount:</span>
+                            <strong id="summaryAmount">KES 0.00</strong>
+                        </div>
                     </div>
 
-                    <div class="form-group mb-4">
-                        <label for="notes" class="form-label">
-                            <i class="fas fa-sticky-note me-2"></i>Additional Notes
-                        </label>
-                        <textarea class="form-control" id="notes" name="notes" rows="2"
-                                  placeholder="Any additional notes or comments about this expense..."></textarea>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{{ url_for('expense_list') }}" class="btn btn-outline-secondary">
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('expenses.list') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-times me-2"></i>Cancel
                         </a>
                         <button type="submit" class="btn btn-primary">
@@ -133,64 +117,19 @@
                 </form>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-4">
-        <div class="card bg-light">
+        <!-- Quick Tips Card -->
+        <div class="card mt-4">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Recording Guidelines
-                </h6>
+                <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Quick Tips</h6>
             </div>
             <div class="card-body">
-                <h6 class="text-primary">Required Fields</h6>
-                <ul class="list-unstyled mb-3">
-                    <li><i class="fas fa-check text-success me-2"></i>Category</li>
-                    <li><i class="fas fa-check text-success me-2"></i>Description</li>
-                    <li><i class="fas fa-check text-success me-2"></i>Amount</li>
-                    <li><i class="fas fa-check text-success me-2"></i>Date</li>
+                <ul class="mb-0">
+                    <li class="mb-2">Always include detailed descriptions for easy tracking</li>
+                    <li class="mb-2">Save receipt numbers and transaction references</li>
+                    <li class="mb-2">Record expenses on the same day when possible</li>
+                    <li>Use the correct category for accurate reporting</li>
                 </ul>
-
-                <h6 class="text-primary">Best Practices</h6>
-                <ul class="list-unstyled mb-3">
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Be specific in descriptions</li>
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Keep receipts for reference</li>
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Record expenses promptly</li>
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Include reference numbers</li>
-                </ul>
-
-                <h6 class="text-primary">Categories</h6>
-                <div class="mb-0">
-                    {% for category in categories %}
-                    <span class="badge bg-secondary me-1 mb-1">{{ category.name }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <div class="card mt-3">
-            <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-calculator me-2"></i>Quick Calculator
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="input-group mb-2">
-                    <span class="input-group-text">+</span>
-                    <input type="number" class="form-control form-control-sm" id="calc-input"
-                           placeholder="Amount" step="0.01">
-                    <button class="btn btn-outline-primary btn-sm" onclick="addToTotal()">Add</button>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Total:</span>
-                    <strong id="calc-total">KSh 0.00</strong>
-                </div>
-                <button class="btn btn-outline-secondary btn-sm w-100" onclick="transferTotal()">
-                    Use as Amount
-                </button>
-                <button class="btn btn-outline-warning btn-sm w-100 mt-1" onclick="clearCalculator()">
-                    Clear
-                </button>
             </div>
         </div>
     </div>
@@ -199,128 +138,30 @@
 
 {% block scripts %}
 <script>
-let calculatorTotal = 0;
-
-$(document).ready(function() {
-    // Form validation
-    const form = $('form');
-
-    form.on('submit', function(e) {
-        let isValid = true;
-
-        // Reset validation
-        $('.form-control, .form-select').removeClass('is-invalid is-valid');
-
-        // Category validation
-        if (!$('#category_id').val()) {
-            $('#category_id').addClass('is-invalid');
-            isValid = false;
-        } else {
-            $('#category_id').addClass('is-valid');
-        }
-
-        // Description validation
-        const description = $('#description').val().trim();
-        if (!description || description.length < 10) {
-            $('#description').addClass('is-invalid');
-            if (!description) {
-                $('#description').siblings('.invalid-feedback').text('Please provide a description.');
-            } else {
-                $('#description').siblings('.invalid-feedback').text('Description should be at least 10 characters.');
-            }
-            isValid = false;
-        } else {
-            $('#description').addClass('is-valid');
-        }
-
-        // Amount validation
-        const amount = parseFloat($('#amount').val());
-        if (!amount || amount <= 0) {
-            $('#amount').addClass('is-invalid');
-            isValid = false;
-        } else {
-            $('#amount').addClass('is-valid');
-        }
-
-        // Date validation
-        if (!$('#expense_date').val()) {
-            $('#expense_date').addClass('is-invalid');
-            isValid = false;
-        } else {
-            $('#expense_date').addClass('is-valid');
-        }
-
-        if (!isValid) {
-            e.preventDefault();
-            $('html, body').animate({
-                scrollTop: $('.is-invalid').first().offset().top - 100
-            }, 500);
-        }
-    });
-
-    // Real-time validation
-    $('#category_id').on('change', function() {
-        if ($(this).val()) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        }
-    });
-
-    $('#description').on('blur', function() {
-        const value = $(this).val().trim();
-        if (value && value.length >= 10) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        }
-    });
-
-    $('#amount').on('blur', function() {
-        const value = parseFloat($(this).val());
-        if (value && value > 0) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        }
-    });
-
-    // Amount formatting
-    $('#amount').on('blur', function() {
-        const value = parseFloat($(this).val());
-        if (value) {
-            $(this).val(value.toFixed(2));
-        }
-    });
-
-    // Calculator enter key support
-    $('#calc-input').on('keypress', function(e) {
-        if (e.which === 13) {
-            addToTotal();
-        }
-    });
+// Set today's date as default
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('expense_date');
+    if (!dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
 });
 
-function addToTotal() {
-    const input = $('#calc-input');
-    const amount = parseFloat(input.val());
+// Update summary when amount changes
+document.getElementById('amount').addEventListener('input', function() {
+    const amount = parseFloat(this.value) || 0;
+    document.getElementById('summaryAmount').textContent =
+        'KES ' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+});
 
-    if (amount && amount > 0) {
-        calculatorTotal += amount;
-        updateCalculatorDisplay();
-        input.val('').focus();
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const amount = parseFloat(document.getElementById('amount').value);
+    if (amount <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid amount greater than 0');
+        return false;
     }
-}
-
-function updateCalculatorDisplay() {
-    $('#calc-total').text('KSh ' + calculatorTotal.toFixed(2));
-}
-
-function transferTotal() {
-    if (calculatorTotal > 0) {
-        $('#amount').val(calculatorTotal.toFixed(2));
-        $('#amount').trigger('blur'); // Trigger validation
-    }
-}
-
-function clearCalculator() {
-    calculatorTotal = 0;
-    updateCalculatorDisplay();
-    $('#calc-input').val('');
-}
+});
 </script>
 {% endblock %}

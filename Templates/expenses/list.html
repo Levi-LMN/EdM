@@ -1,549 +1,229 @@
 {% extends "base.html" %}
 
 {% block title %}Expenses - EduManage Pro{% endblock %}
-
-{% block page_title %}School Expenses{% endblock %}
+{% block page_title %}Expense Management{% endblock %}
 
 {% block page_actions %}
-<div class="btn-group" role="group">
-    <a href="{{ url_for('add_expense') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Add Expense
-    </a>
-    <a href="{{ url_for('add_expense_category') }}" class="btn btn-outline-primary">
-        <i class="fas fa-folder-plus me-2"></i>Add Category
-    </a>
-</div>
+<a href="{{ url_for('expenses.add') }}" class="btn btn-primary">
+    <i class="fas fa-plus-square me-2"></i>Record Expense
+</a>
+<a href="{{ url_for('expenses.add_category') }}" class="btn btn-outline-primary">
+    <i class="fas fa-folder-plus me-2"></i>Add Category
+</a>
 {% endblock %}
 
 {% block content %}
-<style>
-    /* Custom styles for expense cards */
-    .expense-card {
-        background: linear-gradient(135deg, var(--card-bg-start, rgba(255, 255, 255, 0.95)) 0%, var(--card-bg-end, rgba(255, 255, 255, 0.85)) 100%);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 20px;
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-alt text-primary mb-2" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mb-2">{{ current_month_name }} {{ current_year }}</h6>
+                <h3 class="mb-0">KES {{ "{:,.2f}".format(this_month_total) }}</h3>
+                <small class="text-{{ 'success' if month_change_percent < 0 else 'danger' }}">
+                    <i class="fas fa-arrow-{{ 'down' if month_change_percent < 0 else 'up' }}"></i>
+                    {{ "{:+.1f}".format(month_change_percent) }}% from last month
+                </small>
+            </div>
+        </div>
+    </div>
 
-    .expense-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(31, 38, 135, 0.25);
-    }
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line text-info mb-2" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mb-2">Monthly Average ({{ current_year }})</h6>
+                <h3 class="mb-0">KES {{ "{:,.2f}".format(average_per_month) }}</h3>
+            </div>
+        </div>
+    </div>
 
-    .expense-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: var(--card-pattern, transparent);
-        opacity: 0.1;
-        pointer-events: none;
-    }
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-coins text-warning mb-2" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mb-2">Total Expenses (All Time)</h6>
+                <h3 class="mb-0">KES {{ "{:,.2f}".format(total_expenses) }}</h3>
+            </div>
+        </div>
+    </div>
 
-    .expense-card-total {
-        --card-bg-start: rgba(102, 126, 234, 0.95);
-        --card-bg-end: rgba(118, 75, 162, 0.85);
-        --card-pattern: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="2" fill="white"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
-        color: white;
-    }
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-tag text-success mb-2" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mb-2">Top Category (This Month)</h6>
+                {% if top_category %}
+                <h5 class="mb-0">{{ top_category.name }}</h5>
+                <small class="text-muted">KES {{ "{:,.2f}".format(top_category.total) }}</small>
+                {% else %}
+                <p class="text-muted mb-0">No expenses yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 
-    .expense-card-month {
-        --card-bg-start: rgba(72, 187, 120, 0.95);
-        --card-bg-end: rgba(56, 178, 172, 0.85);
-        --card-pattern: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="waves" width="40" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 Q10 0 20 10 T40 10 V20 H0 Z" fill="white"/></pattern></defs><rect width="100" height="100" fill="url(%23waves)"/></svg>');
-        color: white;
-    }
-
-    .expense-card-average {
-        --card-bg-start: rgba(66, 153, 225, 0.95);
-        --card-bg-end: rgba(59, 130, 246, 0.85);
-        --card-pattern: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="lines" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M0 15 L30 15 M15 0 L15 30" stroke="white" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23lines)"/></svg>');
-        color: white;
-    }
-
-    .expense-card-categories {
-        --card-bg-start: rgba(245, 158, 11, 0.95);
-        --card-bg-end: rgba(251, 146, 60, 0.85);
-        --card-pattern: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="hexagons" width="25" height="22" patternUnits="userSpaceOnUse"><polygon points="12.5,1 22,6.5 22,15.5 12.5,21 3,15.5 3,6.5" fill="none" stroke="white" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23hexagons)"/></svg>');
-        color: white;
-    }
-
-    .expense-card-body {
-        position: relative;
-        z-index: 2;
-        padding: 1.5rem;
-    }
-
-    .expense-metric-value {
-        font-size: 2rem;
-        font-weight: 800;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-
-    .expense-metric-label {
-        font-size: 0.9rem;
-        font-weight: 600;
-        opacity: 0.9;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .expense-metric-icon {
-        font-size: 2.5rem;
-        opacity: 0.3;
-        position: absolute;
-        right: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    .expense-change-indicator {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.25rem 0.5rem;
-        border-radius: 15px;
-        background: rgba(255, 255, 255, 0.2);
-        margin-top: 0.5rem;
-    }
-
-    .expense-change-positive {
-        color: #fef3c7;
-    }
-
-    .expense-change-negative {
-        color: #d1fae5;
-    }
-
-    .expense-breakdown {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        padding: 0.5rem;
-        margin-top: 0.5rem;
-    }
-
-    .expense-breakdown-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.75rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .expense-breakdown-item:last-child {
-        margin-bottom: 0;
-    }
-
-    @media (max-width: 768px) {
-        .expense-metric-value {
-            font-size: 1.5rem;
-        }
-
-        .expense-metric-icon {
-            font-size: 2rem;
-        }
-
-        .expense-card-body {
-            padding: 1rem;
-        }
-    }
-</style>
+<!-- Category Breakdown -->
+{% if category_breakdown %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Category Breakdown ({{ current_month_name }} {{ current_year }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for category in category_breakdown %}
+            <div class="col-md-4 mb-3">
+                <div class="d-flex justify-content-between align-items-center p-3" style="background: rgba(102, 126, 234, 0.1); border-radius: 12px;">
+                    <div>
+                        <h6 class="mb-0">{{ category.name }}</h6>
+                        <small class="text-muted">{{ category.code }}</small>
+                    </div>
+                    <h5 class="mb-0 text-primary">KES {{ "{:,.2f}".format(category.total) }}</h5>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Filters -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-4">
+        <form method="GET" action="{{ url_for('expenses.list') }}" class="row g-3">
+            <div class="col-md-6">
                 <label for="category_id" class="form-label">Filter by Category</label>
-                <select class="form-select" id="category_id" name="category_id" onchange="this.form.submit()">
+                <select name="category_id" id="category_id" class="form-select" onchange="this.form.submit()">
                     <option value="">All Categories</option>
                     {% for category in categories %}
-                        <option value="{{ category.id }}"
-                                {% if selected_category == category.id %}selected{% endif %}>
-                            {{ category.name }}
-                        </option>
+                    <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                        {{ category.name }} ({{ category.code }})
+                    </option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-4">
-                <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('expense_list') }}'">
-                    <i class="fas fa-times me-2"></i>Clear Filters
-                </button>
-            </div>
-            <div class="col-md-4 text-end">
-                <div class="d-flex gap-2 justify-content-end">
-                    <button type="button" class="btn btn-outline-info" onclick="exportExpenses()">
-                        <i class="fas fa-download me-2"></i>Export
-                    </button>
-                </div>
+            <div class="col-md-6 d-flex align-items-end">
+                {% if selected_category %}
+                <a href="{{ url_for('expenses.list') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>Clear Filter
+                </a>
+                {% endif %}
             </div>
         </form>
     </div>
 </div>
 
-<!-- Enhanced Summary Cards -->
-<div class="row mb-4">
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card expense-card expense-card-total h-100">
-            <div class="expense-card-body">
-                <span class="expense-metric-value">{{ expenses.total or 0 }}</span>
-                <div class="expense-metric-label">Total Expenses</div>
-                <i class="fas fa-receipt expense-metric-icon"></i>
-                {% if selected_category %}
-                    <div class="expense-change-indicator">
-                        <i class="fas fa-filter"></i>
-                        Filtered View
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card expense-card expense-card-month h-100">
-            <div class="expense-card-body">
-                <span class="expense-metric-value">{{ this_month_total|currency }}</span>
-                <div class="expense-metric-label">{{ current_month_name }} {{ current_year }}</div>
-                <i class="fas fa-calendar-month expense-metric-icon"></i>
-                {% if month_change_percent != 0 %}
-                    <div class="expense-change-indicator
-                         {% if month_change_percent > 0 %}expense-change-positive{% else %}expense-change-negative{% endif %}">
-                        <i class="fas fa-arrow-{% if month_change_percent > 0 %}up{% else %}down{% endif %}"></i>
-                        {{ month_change_percent|round(1) }}{% if month_change_percent > 0 %}+{% endif %}% vs last month
-                    </div>
-                {% endif %}
-                {% if top_category %}
-                    <div class="expense-breakdown">
-                        <div class="expense-breakdown-item">
-                            <span>Top: {{ top_category.name }}</span>
-                            <span>{{ (top_category.total)|currency }}</span>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card expense-card expense-card-average h-100">
-            <div class="expense-card-body">
-                <span class="expense-metric-value">{{ average_per_month|currency }}</span>
-                <div class="expense-metric-label">Average/Month</div>
-                <i class="fas fa-chart-line expense-metric-icon"></i>
-                <div class="expense-change-indicator">
-                    <i class="fas fa-calendar"></i>
-                    {{ current_year }} YTD
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card expense-card expense-card-categories h-100">
-            <div class="expense-card-body">
-                <span class="expense-metric-value">{{ categories|length }}</span>
-                <div class="expense-metric-label">Categories</div>
-                <i class="fas fa-tags expense-metric-icon"></i>
-                {% if category_breakdown|length > 1 %}
-                    <div class="expense-breakdown">
-                        {% for breakdown in category_breakdown[:2] %}
-                            <div class="expense-breakdown-item">
-                                <span>{{ breakdown.code }}</span>
-                                <span>{{ (breakdown.total)|currency }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Expenses Table -->
+<!-- Expenses List -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-            <i class="fas fa-list me-2"></i>
-            Expense Records
-            {% if selected_category %}
-                <span class="badge bg-primary">
-                    {% for cat in categories if cat.id == selected_category %}
-                        {{ cat.name }}
-                    {% endfor %}
-                </span>
-            {% endif %}
-        </h5>
-        <div class="text-muted">
-            {% if expenses.items %}
-                Showing {{ expenses.items|length }}
-                {% if expenses.has_prev or expenses.has_next %}
-                    of {{ expenses.total }} expenses
-                {% else %}
-                    expenses
-                {% endif %}
-            {% else %}
-                No expenses found
-            {% endif %}
-        </div>
+        <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Expense Records</h5>
+        <span class="badge bg-primary">{{ expenses.total }} Total Records</span>
     </div>
-    <div class="card-body p-0">
+    <div class="card-body">
         {% if expenses.items %}
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Category</th>
-                            <th>Description</th>
-                            <th class="text-end">Amount</th>
-                            <th>Payment Method</th>
-                            <th>Supplier</th>
-                            <th>Reference</th>
-                            <th class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for expense in expenses.items %}
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold">{{ expense.expense_date.strftime('%d %b %Y') }}</div>
-                                    <small class="text-muted">{{ expense.created_at.strftime('%H:%M') }}</small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ expense.category.name }}</span>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold">{{ expense.description[:50] }}{% if expense.description|length > 50 %}...{% endif %}</div>
-                                    {% if expense.approved_by %}
-                                        <small class="text-success">
-                                            <i class="fas fa-check-circle me-1"></i>Approved by {{ expense.approved_by }}
-                                        </small>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <span class="fw-bold text-danger">{{ expense.amount|currency }}</span>
-                                </td>
-                                <td>
-                                    {% if expense.payment_method %}
-                                        <span class="badge bg-info">{{ expense.payment_method.value }}</span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if expense.supplier_name %}
-                                        <div class="fw-semibold">{{ expense.supplier_name[:20] }}{% if expense.supplier_name|length > 20 %}...{% endif %}</div>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if expense.reference_number %}
-                                        <code class="text-primary">{{ expense.reference_number }}</code>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-sm btn-outline-info"
-                                                onclick="viewExpenseDetails({{ expense.id }})"
-                                                title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary"
-                                                onclick="editExpense({{ expense.id }})"
-                                                title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            {% if expenses.pages > 1 %}
-                <div class="card-footer">
-                    <nav aria-label="Expense pagination">
-                        <ul class="pagination justify-content-center mb-0">
-                            {% if expenses.has_prev %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('expense_list', page=expenses.prev_num, category_id=selected_category) }}">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </a>
-                                </li>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Payment Method</th>
+                        <th>Supplier</th>
+                        <th>Approved By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses.items %}
+                    <tr>
+                        <td>{{ expense.expense_date.strftime('%d %b %Y') }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ expense.category.code }}</span>
+                            <br><small class="text-muted">{{ expense.category.name }}</small>
+                        </td>
+                        <td>
+                            {{ expense.description[:50] }}{% if expense.description|length > 50 %}...{% endif %}
+                            {% if expense.notes %}
+                            <br><small class="text-muted"><i class="fas fa-sticky-note"></i> Has notes</small>
                             {% endif %}
-
-                            {% for page_num in expenses.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
-                                {% if page_num %}
-                                    {% if page_num != expenses.page %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="{{ url_for('expense_list', page=page_num, category_id=selected_category) }}">{{ page_num }}</a>
-                                        </li>
-                                    {% else %}
-                                        <li class="page-item active">
-                                            <span class="page-link">{{ page_num }}</span>
-                                        </li>
-                                    {% endif %}
-                                {% else %}
-                                    <li class="page-item disabled">
-                                        <span class="page-link">…</span>
-                                    </li>
-                                {% endif %}
-                            {% endfor %}
-
-                            {% if expenses.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('expense_list', page=expenses.next_num, category_id=selected_category) }}">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </a>
-                                </li>
+                        </td>
+                        <td>
+                            <strong class="text-danger">KES {{ "{:,.2f}".format(expense.amount) }}</strong>
+                        </td>
+                        <td>
+                            {% if expense.payment_method %}
+                            <span class="badge bg-secondary">{{ expense.payment_method.value }}</span>
+                            {% if expense.reference_number %}
+                            <br><small class="text-muted">{{ expense.reference_number }}</small>
                             {% endif %}
-                        </ul>
-                    </nav>
-                </div>
-            {% endif %}
-        {% else %}
-            <div class="text-center py-5">
-                <div class="mb-3">
-                    <i class="fas fa-receipt text-muted" style="font-size: 4rem;"></i>
-                </div>
-                <h5 class="text-muted mb-3">No Expenses Found</h5>
-                {% if selected_category %}
-                    <p class="text-muted mb-4">No expenses found in the selected category.</p>
-                    <a href="{{ url_for('expense_list') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-eye me-2"></i>View All Expenses
-                    </a>
-                {% else %}
-                    <p class="text-muted mb-4">Start by adding your first expense record.</p>
-                    <a href="{{ url_for('add_expense') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Add First Expense
-                    </a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ expense.supplier_name or '-' }}</td>
+                        <td>{{ expense.approved_by or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewExpenseDetails({{ expense.id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if expenses.pages > 1 %}
+        <nav aria-label="Expense pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if expenses.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('expenses.list', page=expenses.prev_num, category_id=selected_category) }}">Previous</a>
+                </li>
                 {% endif %}
-            </div>
+
+                {% for page_num in expenses.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == expenses.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('expenses.list', page=page_num, category_id=selected_category) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if expenses.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('expenses.list', page=expenses.next_num, category_id=selected_category) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No expenses recorded yet</h5>
+            <p class="text-muted">Start by recording your first expense</p>
+            <a href="{{ url_for('expenses.add') }}" class="btn btn-primary">
+                <i class="fas fa-plus-square me-2"></i>Record Expense
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>
+{% endblock %}
 
-<!-- Expense Details Modal -->
-<div class="modal fade" id="expenseDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-receipt me-2"></i>Expense Details
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="expenseDetailsContent">
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="printExpenseBtn">
-                    <i class="fas fa-print me-2"></i>Print
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block scripts %}
 <script>
-    function viewExpenseDetails(expenseId) {
-        const modal = new bootstrap.Modal(document.getElementById('expenseDetailsModal'));
-        const contentDiv = document.getElementById('expenseDetailsContent');
-
-        // Show loading spinner
-        contentDiv.innerHTML = `
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
-
-        modal.show();
-
-        // Simulate API call - In real implementation, fetch expense details
-        setTimeout(() => {
-            contentDiv.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Basic Information</h6>
-                        <table class="table table-sm">
-                            <tr>
-                                <td><strong>Date:</strong></td>
-                                <td>Loading...</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Category:</strong></td>
-                                <td>Loading...</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Amount:</strong></td>
-                                <td>Loading...</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Payment Details</h6>
-                        <table class="table table-sm">
-                            <tr>
-                                <td><strong>Method:</strong></td>
-                                <td>Loading...</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Reference:</strong></td>
-                                <td>Loading...</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Supplier:</strong></td>
-                                <td>Loading...</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <h6>Description</h6>
-                        <p class="border p-3 rounded bg-light">Loading expense description...</p>
-                    </div>
-                </div>
-            `;
-        }, 500);
-    }
-
-    function editExpense(expenseId) {
-        // In real implementation, redirect to edit page
-        window.location.href = `/expenses/edit/${expenseId}`;
-    }
-
-    function exportExpenses() {
-        // In real implementation, trigger export
-        alert('Export functionality will be implemented here');
-    }
-
-    document.getElementById('printExpenseBtn').addEventListener('click', function() {
-        window.print();
-    });
+function viewExpenseDetails(expenseId) {
+    // Placeholder for viewing expense details
+    alert('View details for expense ID: ' + expenseId + '\n\nThis feature can be implemented to show a modal with full expense details.');
+}
 </script>
 {% endblock %}

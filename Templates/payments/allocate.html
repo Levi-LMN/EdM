@@ -4,7 +4,7 @@
 {% block page_title %}Allocate Payment{% endblock %}
 
 {% block page_actions %}
-<a href="{{ url_for('student_detail', student_id=payment.student_id) }}" class="btn btn-outline-primary">
+<a href="{{ url_for('students.detail', student_id=payment.student_id) }}" class="btn btn-outline-primary">
     <i class="fas fa-arrow-left me-2"></i>Back to Student
 </a>
 {% endblock %}

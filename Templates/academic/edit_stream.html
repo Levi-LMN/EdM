@@ -1,73 +1,64 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block page_title %}Edit Stream{% endblock %}
+{% block title %}Edit Stream - EduManage Pro{% endblock %}
+{% block page_title %}Edit Stream: {{ stream.class_obj.name }}-{{ stream.name }}{% endblock %}
 
 {% block page_actions %}
-    <a href="{{ url_for('academic_management') }}" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Back to Academic Management
-    </a>
+<a href="{{ url_for('academic.index') }}" class="btn btn-outline-primary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Academic Setup
+</a>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-6">
+    <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Edit Stream - {{ stream.class_obj.name }}-{{ stream.name }}</h5>
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>Edit Stream Information
+                </h5>
             </div>
             <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label">Class</label>
-                        <input type="text" class="form-control" value="{{ stream.class_obj.name }}" readonly>
-                        <div class="form-text">Class cannot be changed when editing stream</div>
-                    </div>
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Editing stream in <strong>{{ stream.class_obj.name }}</strong>
+                </div>
 
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Stream Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="name" name="name" 
-                               value="{{ stream.name }}" required maxlength="10">
-                        <div class="form-text">e.g., A, B, C, North, South, etc.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="capacity" class="form-label">Capacity</label>
-                        <input type="number" class="form-control" id="capacity" name="capacity" 
-                               value="{{ stream.capacity }}" min="1" max="100">
-                        <div class="form-text">Maximum number of students in this stream</div>
-                    </div>
-
+                <form method="POST" action="{{ url_for('academic.edit_stream', stream_id=stream.id) }}">
                     <div class="row">
-                        <div class="col">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Update Stream
-                            </button>
-                            <a href="{{ url_for('academic_management') }}" class="btn btn-secondary ms-2">Cancel</a>
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Stream Name <span class="text-danger">*</span></label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="name"
+                                   name="name"
+                                   value="{{ stream.name }}"
+                                   required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="capacity" class="form-label">Capacity <span class="text-danger">*</span></label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="capacity"
+                                   name="capacity"
+                                   value="{{ stream.capacity }}"
+                                   min="1"
+                                   max="100"
+                                   required>
+                            <small class="text-muted">Maximum number of students</small>
                         </div>
                     </div>
-                </form>
 
-                <!-- Current stream info -->
-                <hr class="my-4">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Current Information:</h6>
-                        <ul class="list-unstyled">
-                            <li><strong>Class:</strong> {{ stream.class_obj.name }}</li>
-                            <li><strong>Stream:</strong> {{ stream.name }}</li>
-                            <li><strong>Capacity:</strong> {{ stream.capacity }}</li>
-                        </ul>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('academic.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Stream
+                        </button>
                     </div>
-                    <div class="col-md-6">
-                        <h6>Current Students:</h6>
-                        {% if stream.students %}
-                            <p class="text-info">{{ stream.students|length }} students enrolled</p>
-                            <small class="text-muted">Note: Editing capacity won't affect enrolled students</small>
-                        {% else %}
-                            <p class="text-muted">No students enrolled yet</p>
-                        {% endif %}
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>

@@ -1,226 +1,186 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block page_title %}Academic Management{% endblock %}
+{% block title %}Academic Setup - EduManage Pro{% endblock %}
+{% block page_title %}Academic Setup{% endblock %}
 
 {% block page_actions %}
-    <a href="{{ url_for('add_class') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Add Class
-    </a>
-    <a href="{{ url_for('add_academic_year') }}" class="btn btn-outline-primary">
-        <i class="fas fa-calendar-plus me-2"></i>Add Academic Year
-    </a>
+<a href="{{ url_for('academic.add_class') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Add Class
+</a>
+<a href="{{ url_for('academic.add_year') }}" class="btn btn-outline-primary">
+    <i class="fas fa-calendar-plus me-2"></i>Add Academic Year
+</a>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-    <!-- Classes -->
-    <div class="col-lg-8 mb-4">
+    <!-- Academic Years Section -->
+    <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Classes & Streams</h5>
-            </div>
-            <div class="card-body">
-                {% if classes %}
-                    <div class="accordion" id="classesAccordion">
-                        {% for class in classes %}
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button"
-                                        data-bs-toggle="collapse" data-bs-target="#class{{ class.id }}">
-                                    {{ class.name }}
-                                    <span class="badge bg-primary ms-2">{{ class.streams|length }} streams</span>
-                                </button>
-                            </h2>
-                            <div id="class{{ class.id }}" class="accordion-collapse collapse"
-                                 data-bs-parent="#classesAccordion">
-                                <div class="accordion-body">
-                                    <!-- Class Actions -->
-                                    <div class="row align-items-center mb-3">
-                                        <div class="col">
-                                            <strong>Class: {{ class.name }}</strong>
-                                            {% if class.level %}
-                                                <span class="badge bg-secondary ms-2">{{ class.level }}</span>
-                                            {% endif %}
-                                            {% if class.next_class %}
-                                                <small class="text-muted ms-2">→ Promotes to {{ class.next_class.name }}</small>
-                                            {% endif %}
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ url_for('edit_class', class_id=class.id) }}"
-                                                   class="btn btn-outline-primary" title="Edit Class">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-outline-danger"
-                                                        onclick="confirmDelete('class', {{ class.id }}, '{{ class.name }}')"
-                                                        title="Delete Class">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Streams Section -->
-                                    <div class="row align-items-center mb-3">
-                                        <div class="col">
-                                            <strong>Streams:</strong>
-                                        </div>
-                                        <div class="col-auto">
-                                            <a href="{{ url_for('add_stream', class_id=class.id) }}"
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-plus me-1"></i>Add Stream
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    {% if class.streams %}
-                                        <div class="row">
-                                            {% for stream in class.streams %}
-                                            <div class="col-md-6 mb-2">
-                                                <div class="border rounded p-3">
-                                                    <div class="d-flex justify-content-between align-items-start">
-                                                        <div>
-                                                            <strong>{{ stream.name }}</strong>
-                                                            <br><small class="text-muted">Capacity: {{ stream.capacity }}</small>
-                                                        </div>
-                                                        <div class="btn-group btn-group-sm" role="group">
-                                                            <a href="{{ url_for('edit_stream', stream_id=stream.id) }}"
-                                                               class="btn btn-outline-primary btn-sm" title="Edit Stream">
-                                                                <i class="fas fa-edit"></i>
-                                                            </a>
-                                                            <button type="button" class="btn btn-outline-danger btn-sm"
-                                                                    onclick="confirmDelete('stream', {{ stream.id }}, '{{ class.name }}-{{ stream.name }}')"
-                                                                    title="Delete Stream">
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                    {% else %}
-                                        <p class="text-muted">No streams defined for this class.</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-chalkboard-teacher fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No classes defined</p>
-                        <a href="{{ url_for('add_class') }}" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Add Your First Class
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Academic Years -->
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Academic Years</h5>
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Academic Years
+                </h5>
             </div>
             <div class="card-body">
                 {% if academic_years %}
-                    <div class="list-group list-group-flush">
-                        {% for year in academic_years %}
-                        <div class="list-group-item d-flex justify-content-between align-items-start px-0">
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <strong>{{ year.year }}</strong>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ url_for('edit_academic_year', year_id=year.id) }}"
-                                           class="btn btn-outline-primary btn-sm" title="Edit Academic Year">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-outline-danger btn-sm"
-                                                onclick="confirmDelete('year', {{ year.id }}, '{{ year.year }}')"
-                                                title="Delete Academic Year">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Period</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for year in academic_years %}
+                            <tr>
+                                <td><strong>{{ year.year }}</strong></td>
+                                <td>
+                                    <small>{{ year.start_date.strftime('%b %d') }} - {{ year.end_date.strftime('%b %d') }}</small>
+                                </td>
+                                <td>
+                                    {% if year.is_current %}
+                                    <span class="badge bg-success">Current</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Past</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('academic.edit_year', year_id=year.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('academic.delete_year', year_id=year.id) }}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Delete this academic year?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="fas fa-trash"></i>
                                         </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No academic years configured yet.</p>
+                    <a href="{{ url_for('academic.add_year') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add First Year
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Classes & Streams Section -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-school me-2"></i>Classes & Streams
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if classes %}
+                <div class="accordion" id="classesAccordion">
+                    {% for class in classes %}
+                    <div class="accordion-item mb-2" style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden;">
+                        <h2 class="accordion-header" id="heading{{ class.id }}">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#collapse{{ class.id }}"
+                                    aria-expanded="false">
+                                <div class="d-flex justify-content-between w-100 align-items-center">
+                                    <div>
+                                        <strong>{{ class.name }}</strong>
+                                        <span class="badge bg-info ms-2">{{ class.level }}</span>
                                     </div>
+                                    <span class="badge bg-primary me-3">
+                                        {{ class.streams|length }} stream(s)
+                                    </span>
                                 </div>
-                                {% if year.is_current %}
-                                    <span class="badge bg-success mb-1">Current</span>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ class.id }}" class="accordion-collapse collapse"
+                             data-bs-parent="#classesAccordion">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <a href="{{ url_for('academic.edit_class', class_id=class.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit me-1"></i>Edit Class
+                                    </a>
+                                    <a href="{{ url_for('academic.add_stream', class_id=class.id) }}"
+                                       class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-plus me-1"></i>Add Stream
+                                    </a>
+                                    <form method="POST"
+                                          action="{{ url_for('academic.delete_class', class_id=class.id) }}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Delete {{ class.name }}?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </div>
+
+                                {% if class.streams %}
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Stream</th>
+                                            <th>Capacity</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for stream in class.streams %}
+                                        <tr>
+                                            <td><strong>{{ stream.name }}</strong></td>
+                                            <td>{{ stream.capacity }} students</td>
+                                            <td>
+                                                <a href="{{ url_for('academic.edit_stream', stream_id=stream.id) }}"
+                                                   class="btn btn-xs btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form method="POST"
+                                                      action="{{ url_for('academic.delete_stream', stream_id=stream.id) }}"
+                                                      style="display:inline;"
+                                                      onsubmit="return confirm('Delete stream {{ stream.name }}?');">
+                                                    <button type="submit" class="btn btn-xs btn-outline-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% else %}
+                                <p class="text-muted small mb-0">No streams yet</p>
                                 {% endif %}
-                                <br><small class="text-muted">
-                                    {{ year.start_date.strftime('%d/%m/%Y') }} - {{ year.end_date.strftime('%d/%m/%Y') }}
-                                </small>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
+                    {% endfor %}
+                </div>
                 {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No academic years defined</p>
-                        <a href="{{ url_for('add_academic_year') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus me-2"></i>Add Academic Year
-                        </a>
-                    </div>
+                <div class="text-center py-4">
+                    <i class="fas fa-school fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No classes configured yet.</p>
+                    <a href="{{ url_for('academic.add_class') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add First Class
+                    </a>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong id="deleteItemName"></strong>?</p>
-                <p class="text-danger small mb-0">
-                    <i class="fas fa-exclamation-triangle me-1"></i>
-                    This action cannot be undone.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="deleteForm" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function confirmDelete(type, id, name) {
-    // Set modal content
-    document.getElementById('deleteItemName').textContent = name;
-
-    // Set form action based on type
-    const form = document.getElementById('deleteForm');
-    let action = '';
-
-    switch(type) {
-        case 'class':
-            action = "{{ url_for('delete_class', class_id=0) }}".replace('0', id);
-            break;
-        case 'stream':
-            action = "{{ url_for('delete_stream', stream_id=0) }}".replace('0', id);
-            break;
-        case 'year':
-            action = "{{ url_for('delete_academic_year', year_id=0) }}".replace('0', id);
-            break;
-    }
-
-    form.action = action;
-
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    modal.show();
-}
-</script>
 {% endblock %}

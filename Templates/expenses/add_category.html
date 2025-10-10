@@ -4,131 +4,101 @@
 {% block page_title %}Add Expense Category{% endblock %}
 
 {% block page_actions %}
-<a href="{{ url_for('expense_list') }}" class="btn btn-outline-primary">
+<a href="{{ url_for('expenses.list') }}" class="btn btn-outline-secondary">
     <i class="fas fa-arrow-left me-2"></i>Back to Expenses
 </a>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-folder-plus me-2"></i>New Category Details
-                </h5>
+                <h5 class="mb-0"><i class="fas fa-folder-plus me-2"></i>New Expense Category</h5>
             </div>
             <div class="card-body">
-                <form method="POST" novalidate>
-                    <div class="form-group mb-3">
-                        <label for="name" class="form-label">
-                            <i class="fas fa-tag me-2"></i>Category Name *
-                        </label>
-                        <input type="text" class="form-control" id="name" name="name"
-                               placeholder="e.g. Office Supplies, Utilities" required>
-                        <div class="invalid-feedback">Please provide a category name.</div>
+                <form method="POST" action="{{ url_for('expenses.add_category') }}">
+                    <!-- Category Name -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="name" class="form-control"
+                               placeholder="e.g., Utilities, Salaries, Maintenance" required>
+                        <small class="text-muted">Choose a clear, descriptive name</small>
                     </div>
 
-                    <div class="form-group mb-3">
-                        <label for="code" class="form-label">
-                            <i class="fas fa-code me-2"></i>Category Code *
-                        </label>
-                        <input type="text" class="form-control" id="code" name="code"
-                               placeholder="e.g. SUPPLIES, UTIL" required maxlength="20">
-                        <div class="invalid-feedback">Please provide a unique category code.</div>
-                        <div class="form-text">Short code for identification (will be converted to uppercase)</div>
+                    <!-- Category Code -->
+                    <div class="mb-3">
+                        <label for="code" class="form-label">Category Code <span class="text-danger">*</span></label>
+                        <input type="text" name="code" id="code" class="form-control"
+                               placeholder="e.g., UTIL, SAL, MAINT" maxlength="20" required
+                               style="text-transform: uppercase;">
+                        <small class="text-muted">Short code (will be converted to uppercase)</small>
                     </div>
 
-                    <div class="form-group mb-4">
-                        <label for="description" class="form-label">
-                            <i class="fas fa-file-alt me-2"></i>Description
-                        </label>
-                        <textarea class="form-control" id="description" name="description" rows="3"
-                                  placeholder="Optional description of what expenses this category covers..."></textarea>
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea name="description" id="description" class="form-control" rows="3"
+                                  placeholder="Optional: Describe what expenses belong to this category"></textarea>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{{ url_for('expense_list') }}" class="btn btn-outline-secondary">
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('expenses.list') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-times me-2"></i>Cancel
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Create Category
+                            <i class="fas fa-save me-2"></i>Save Category
                         </button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
 
-    <div class="col-md-6">
-        <div class="card bg-light">
+        <!-- Common Categories Reference -->
+        <div class="card mt-4">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Category Guidelines
-                </h6>
+                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Common School Expense Categories</h6>
             </div>
             <div class="card-body">
-                <h6 class="text-primary">Common Categories</h6>
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-check text-success me-2"></i>Administration</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Maintenance</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Utilities</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Transport</li>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="mb-0">
+                            <li>Salaries & Wages (SAL)</li>
+                            <li>Utilities (UTIL)</li>
+                            <li>Maintenance (MAINT)</li>
+                            <li>Office Supplies (SUPP)</li>
+                            <li>Transport (TRANS)</li>
                         </ul>
                     </div>
-                    <div class="col-6">
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-check text-success me-2"></i>Supplies</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Food & Catering</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Staff</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Equipment</li>
+                    <div class="col-md-6">
+                        <ul class="mb-0">
+                            <li>Food & Catering (FOOD)</li>
+                            <li>Learning Materials (LMAT)</li>
+                            <li>Sports & Games (SPORT)</li>
+                            <li>Security (SEC)</li>
+                            <li>Miscellaneous (MISC)</li>
                         </ul>
                     </div>
                 </div>
-
-                <h6 class="text-primary">Best Practices</h6>
-                <ul class="list-unstyled mb-3">
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Use clear, descriptive names</li>
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Keep codes short and memorable</li>
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Avoid overlapping categories</li>
-                    <li><i class="fas fa-lightbulb text-warning me-2"></i>Think about reporting needs</li>
-                </ul>
-
-                <h6 class="text-primary">Naming Tips</h6>
-                <p class="small text-muted mb-0">
-                    Good category names are specific enough to be useful but broad enough
-                    to cover related expenses. For example, use "Office Supplies" rather than
-                    "Pens and Paper" to cover all office materials.
-                </p>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fas fa-info-circle"></i> These are suggestions. Create categories that match your school's needs.
+                </small>
             </div>
         </div>
 
-        <div class="card mt-3">
+        <!-- Guidelines Card -->
+        <div class="card mt-4">
             <div class="card-header">
-                <h6 class="mb-0">
-                    <i class="fas fa-list me-2"></i>Suggested Categories
-                </h6>
+                <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>Category Guidelines</h6>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="fillCategory('Administration', 'ADMIN')">
-                        Administration (ADMIN)
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="fillCategory('Maintenance & Repairs', 'MAINT')">
-                        Maintenance & Repairs (MAINT)
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="fillCategory('Utilities', 'UTIL')">
-                        Utilities (UTIL)
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="fillCategory('Teaching Materials', 'TEACH')">
-                        Teaching Materials (TEACH)
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="fillCategory('Security', 'SEC')">
-                        Security (SEC)
-                    </button>
-                </div>
+                <ul class="mb-0">
+                    <li class="mb-2"><strong>Be Specific:</strong> Create categories that clearly identify expense types</li>
+                    <li class="mb-2"><strong>Use Short Codes:</strong> Keep codes under 10 characters for easy reference</li>
+                    <li class="mb-2"><strong>Avoid Duplication:</strong> Check existing categories before creating new ones</li>
+                    <li><strong>Plan Ahead:</strong> Think about how you'll want to analyze expenses later</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -137,88 +107,45 @@
 
 {% block scripts %}
 <script>
-$(document).ready(function() {
-    // Form validation
-    const form = $('form');
+// Auto-generate code from name
+document.getElementById('name').addEventListener('input', function() {
+    const codeInput = document.getElementById('code');
 
-    form.on('submit', function(e) {
-        let isValid = true;
+    // Only auto-generate if code is empty
+    if (!codeInput.value) {
+        let code = this.value
+            .toUpperCase()
+            .replace(/[^A-Z\s]/g, '') // Remove non-letters
+            .split(' ')
+            .filter(word => word.length > 0)
+            .map(word => word.substring(0, 3)) // Take first 3 letters of each word
+            .join('');
 
-        // Reset validation
-        $('.form-control').removeClass('is-invalid is-valid');
-
-        // Name validation
-        const name = $('#name').val().trim();
-        if (!name || name.length < 3) {
-            $('#name').addClass('is-invalid');
-            isValid = false;
-        } else {
-            $('#name').addClass('is-valid');
-        }
-
-        // Code validation
-        const code = $('#code').val().trim();
-        if (!code || code.length < 2 || !/^[A-Z0-9]+$/.test(code.toUpperCase())) {
-            $('#code').addClass('is-invalid');
-            if (!code) {
-                $('#code').siblings('.invalid-feedback').text('Please provide a category code.');
-            } else {
-                $('#code').siblings('.invalid-feedback').text('Code should contain only letters and numbers.');
-            }
-            isValid = false;
-        } else {
-            $('#code').addClass('is-valid');
-        }
-
-        if (!isValid) {
-            e.preventDefault();
-            $('html, body').animate({
-                scrollTop: $('.is-invalid').first().offset().top - 100
-            }, 500);
-        }
-    });
-
-    // Auto-generate code from name
-    $('#name').on('input', function() {
-        const name = $(this).val();
-        if (name && !$('#code').val()) {
-            const code = name.toUpperCase()
-                             .replace(/[^A-Z0-9\s]/g, '')
-                             .split(' ')
-                             .map(word => word.substring(0, 4))
-                             .join('')
-                             .substring(0, 10);
-            $('#code').val(code);
-        }
-    });
-
-    // Format code on input
-    $('#code').on('input', function() {
-        let value = $(this).val().toUpperCase().replace(/[^A-Z0-9]/g, '');
-        $(this).val(value);
-    });
-
-    // Real-time validation
-    $('#name').on('blur', function() {
-        const value = $(this).val().trim();
-        if (value && value.length >= 3) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        }
-    });
-
-    $('#code').on('blur', function() {
-        const value = $(this).val().trim();
-        if (value && value.length >= 2 && /^[A-Z0-9]+$/.test(value)) {
-            $(this).removeClass('is-invalid').addClass('is-valid');
-        }
-    });
+        codeInput.value = code.substring(0, 20); // Limit to 20 chars
+    }
 });
 
-function fillCategory(name, code) {
-    $('#name').val(name);
-    $('#code').val(code);
-    $('#name').trigger('blur');
-    $('#code').trigger('blur');
-}
+// Convert code to uppercase as user types
+document.getElementById('code').addEventListener('input', function() {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    const code = document.getElementById('code').value.trim();
+
+    if (name.length < 3) {
+        e.preventDefault();
+        alert('Category name must be at least 3 characters long');
+        return false;
+    }
+
+    if (code.length < 2) {
+        e.preventDefault();
+        alert('Category code must be at least 2 characters long');
+        return false;
+    }
+});
 </script>
 {% endblock %}

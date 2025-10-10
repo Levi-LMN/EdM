@@ -1,256 +1,153 @@
 {% extends "base.html" %}
 
 {% block title %}Edit Fee Item - EduManage Pro{% endblock %}
-
-{% block page_title %}Edit Fee Item{% endblock %}
+{% block page_title %}Edit Fee Item: {{ fee_item.name }}{% endblock %}
 
 {% block page_actions %}
-<a href="{{ url_for('fee_management') }}" class="btn btn-outline-primary">
-    <i class="fas fa-arrow-left me-2"></i>Back to Fee Management
+<a href="{{ url_for('fees.index') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Fee Items
 </a>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <!-- Usage Statistics Card -->
+        <!-- Usage Warning -->
         {% if usage_stats %}
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0">
-                    <i class="fas fa-info-circle me-2"></i>Fee Item Usage Statistics
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="mb-2">
-                            <i class="fas fa-sliders-h fa-2x text-primary mb-2"></i>
-                            <h4 class="mb-0">{{ usage_stats.total_rates }}</h4>
-                            <small class="text-muted">Fee Rates</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="mb-2">
-                            <i class="fas fa-file-invoice fa-2x text-success mb-2"></i>
-                            <h4 class="mb-0">{{ usage_stats.total_assessments }}</h4>
-                            <small class="text-muted">Assessments</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="mb-2">
-                            <i class="fas fa-user-tag fa-2x text-warning mb-2"></i>
-                            <h4 class="mb-0">{{ usage_stats.total_assignments }}</h4>
-                            <small class="text-muted">Individual Assignments</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="mb-2">
-                            <i class="fas fa-coins fa-2x text-info mb-2"></i>
-                            <h4 class="mb-0">{{ usage_stats.total_revenue|currency }}</h4>
-                            <small class="text-muted">Total Revenue</small>
-                        </div>
-                    </div>
+        <div class="alert alert-warning mb-4">
+            <h6 class="mb-2"><i class="fas fa-exclamation-triangle me-2"></i>This Fee Item Is In Use</h6>
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>{{ usage_stats.total_rates }}</strong>
+                    <br><small>Fee Rates</small>
                 </div>
-                <div class="alert alert-warning mt-3 mb-0">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Note:</strong> This fee item is currently in use. Changes will not affect existing assessments but will apply to future fee assessments.
+                <div class="col-md-3">
+                    <strong>{{ usage_stats.total_assessments }}</strong>
+                    <br><small>Assessments</small>
+                </div>
+                <div class="col-md-3">
+                    <strong>{{ usage_stats.total_assignments }}</strong>
+                    <br><small>Assignments</small>
+                </div>
+                <div class="col-md-3">
+                    <strong>KES {{ "{:,.2f}".format(usage_stats.total_revenue) }}</strong>
+                    <br><small>Total Revenue</small>
                 </div>
             </div>
+            <small class="text-muted mt-2 d-block">Be careful when editing - changes may affect existing data</small>
         </div>
         {% endif %}
 
-        <!-- Edit Form Card -->
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-edit me-2"></i>Edit Fee Item Details
-                </h5>
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Fee Item Details</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" action="{{ url_for('fees.edit_item', item_id=fee_item.id) }}">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="name" class="form-label">
-                                Fee Item Name <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="name" name="name" 
+                        <!-- Fee Name -->
+                        <div class="col-md-8 mb-3">
+                            <label for="name" class="form-label">Fee Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="name" class="form-control"
                                    value="{{ fee_item.name }}" required>
-                            <small class="form-text text-muted">
-                                Full descriptive name (e.g., "Tuition Fee", "Transport Fee")
-                            </small>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="code" class="form-label">
-                                Fee Code <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control text-uppercase" id="code" name="code" 
-                                   value="{{ fee_item.code }}" required maxlength="20">
-                            <small class="form-text text-muted">
-                                Short unique identifier (e.g., "TUITION", "TRANSPORT")
-                            </small>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" 
-                                  rows="3">{{ fee_item.description }}</textarea>
-                        <small class="form-text text-muted">
-                            Optional detailed description of this fee item
-                        </small>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="scope" class="form-label">
-                                Fee Scope <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select" id="scope" name="scope" required>
-                                <option value="UNIVERSAL" {% if fee_item.scope.value == 'UNIVERSAL' %}selected{% endif %}>
-                                    Universal - Applies to all students
-                                </option>
-                                <option value="CLASS_LEVEL" {% if fee_item.scope.value == 'CLASS_LEVEL' %}selected{% endif %}>
-                                    Class Level - Specific to classes
-                                </option>
-                                <option value="STREAM_LEVEL" {% if fee_item.scope.value == 'STREAM_LEVEL' %}selected{% endif %}>
-                                    Stream Level - Specific to streams
-                                </option>
-                                <option value="INDIVIDUAL" {% if fee_item.scope.value == 'INDIVIDUAL' %}selected{% endif %}>
-                                    Individual - Manually assigned
-                                </option>
-                            </select>
-                            <small class="form-text text-muted">
-                                Defines how this fee is applied to students
-                            </small>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label d-block">Fee Type</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_per_km" name="is_per_km" 
-                                       {% if fee_item.is_per_km %}checked{% endif %}>
-                                <label class="form-check-label" for="is_per_km">
-                                    <i class="fas fa-route me-1"></i> Distance-based (Per Kilometer)
-                                </label>
-                            </div>
-                            <small class="form-text text-muted">
-                                Check if this fee is calculated based on distance (typically for transport)
-                            </small>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-info">
-                        <i class="fas fa-lightbulb me-2"></i>
-                        <strong>Tip:</strong> 
-                        {% if fee_item.is_per_km %}
-                            For distance-based fees, rates should be set as "per kilometer" amounts.
-                        {% else %}
-                            For fixed fees, set a specific amount in the fee rates.
-                        {% endif %}
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <div>
-                            {% if fee_item.is_active %}
-                                <span class="badge bg-success">
-                                    <i class="fas fa-check-circle me-1"></i>Active
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary">
-                                    <i class="fas fa-times-circle me-1"></i>Inactive
-                                </span>
+                        <!-- Fee Code -->
+                        <div class="col-md-4 mb-3">
+                            <label for="code" class="form-label">Fee Code <span class="text-danger">*</span></label>
+                            <input type="text" name="code" id="code" class="form-control"
+                                   value="{{ fee_item.code }}" maxlength="20" required
+                                   style="text-transform: uppercase;"
+                                   {% if existing_rates_count > 0 %}readonly title="Cannot change code - rates exist"{% endif %}>
+                            {% if existing_rates_count > 0 %}
+                            <small class="text-warning"><i class="fas fa-lock"></i> Code locked (rates exist)</small>
                             {% endif %}
                         </div>
-                        <div>
-                            <a href="{{ url_for('fee_management') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-2"></i>Cancel
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Save Changes
-                            </button>
+
+                        <!-- Description -->
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea name="description" id="description" class="form-control" rows="2">{{ fee_item.description or '' }}</textarea>
                         </div>
+
+                        <!-- Fee Scope -->
+                        <div class="col-md-6 mb-3">
+                            <label for="scope" class="form-label">Fee Scope <span class="text-danger">*</span></label>
+                            <select name="scope" id="scope" class="form-select" required
+                                    {% if existing_rates_count > 0 %}disabled title="Cannot change scope - rates exist"{% endif %}>
+                                <option value="UNIVERSAL" {% if fee_item.scope.value == 'UNIVERSAL' %}selected{% endif %}>Universal - All Students</option>
+                                <option value="CLASS_LEVEL" {% if fee_item.scope.value == 'CLASS_LEVEL' %}selected{% endif %}>Class Level - Per Class</option>
+                                <option value="STREAM_LEVEL" {% if fee_item.scope.value == 'STREAM_LEVEL' %}selected{% endif %}>Stream Level - Per Stream</option>
+                                <option value="INDIVIDUAL" {% if fee_item.scope.value == 'INDIVIDUAL' %}selected{% endif %}>Individual - Manually Assigned</option>
+                            </select>
+                            {% if existing_rates_count > 0 %}
+                            <input type="hidden" name="scope" value="{{ fee_item.scope.value }}">
+                            <small class="text-warning"><i class="fas fa-lock"></i> Scope locked (rates exist)</small>
+                            {% endif %}
+                        </div>
+
+                        <!-- Rate Type -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Rate Type</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_per_km" id="is_per_km" value="1"
+                                       {% if fee_item.is_per_km %}checked{% endif %}
+                                       {% if existing_rates_count > 0 %}disabled title="Cannot change - rates exist"{% endif %}>
+                                <label class="form-check-label" for="is_per_km">
+                                    <i class="fas fa-route me-1"></i>Per Kilometer Rate
+                                </label>
+                            </div>
+                            {% if existing_rates_count > 0 %}
+                            <input type="hidden" name="is_per_km" value="{% if fee_item.is_per_km %}1{% endif %}">
+                            <small class="text-warning"><i class="fas fa-lock"></i> Type locked (rates exist)</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    {% if existing_rates_count > 0 %}
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Some fields are locked because {{ existing_rates_count }} fee rate(s) exist for this item.
+                        You can still update the name and description.
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('fees.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Fee Item
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
-
-        <!-- Danger Zone Card -->
-        <div class="card border-danger mt-4">
-            <div class="card-header bg-danger text-white">
-                <h6 class="mb-0">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1">
-                            {% if fee_item.is_active %}
-                                Deactivate this fee item
-                            {% else %}
-                                Activate this fee item
-                            {% endif %}
-                        </h6>
-                        <p class="text-muted mb-0 small">
-                            {% if fee_item.is_active %}
-                                Deactivating will prevent new assessments but keep existing data intact.
-                            {% else %}
-                                Activating will allow this fee to be used in new assessments.
-                            {% endif %}
-                        </p>
-                    </div>
-                    <form method="POST" action="{{ url_for('deactivate_fee_item' if fee_item.is_active else 'activate_fee_item', item_id=fee_item.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-{% if fee_item.is_active %}warning{% else %}success{% endif %} btn-sm">
-                            <i class="fas fa-{% if fee_item.is_active %}pause{% else %}play{% endif %}-circle me-1"></i>
-                            {% if fee_item.is_active %}Deactivate{% else %}Activate{% endif %}
-                        </button>
-                    </form>
-                </div>
-
-                {% if existing_rates_count == 0 %}
-                <hr>
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1">Delete this fee item</h6>
-                        <p class="text-muted mb-0 small">
-                            Permanently delete this fee item. This action cannot be undone.
-                        </p>
-                    </div>
-                    <form method="POST" action="{{ url_for('delete_fee_item', item_id=fee_item.id) }}" 
-                          onsubmit="return confirm('Are you sure you want to delete this fee item? This action cannot be undone!');" class="d-inline">
-                        <button type="submit" class="btn btn-danger btn-sm">
-                            <i class="fas fa-trash me-1"></i>Delete
-                        </button>
-                    </form>
-                </div>
-                {% else %}
-                <div class="alert alert-warning mt-3 mb-0">
-                    <i class="fas fa-lock me-2"></i>
-                    This fee item cannot be deleted because it has {{ existing_rates_count }} associated rate(s). 
-                    You can deactivate it instead.
-                </div>
-                {% endif %}
-            </div>
-        </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    // Auto-uppercase code field
-    document.getElementById('code').addEventListener('input', function(e) {
-        e.target.value = e.target.value.toUpperCase();
+// Convert code to uppercase (if not readonly)
+const codeInput = document.getElementById('code');
+if (!codeInput.hasAttribute('readonly')) {
+    codeInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
     });
+}
 
-    // Scope selection helper
-    document.getElementById('scope').addEventListener('change', function(e) {
-        const scope = e.target.value;
-        const isPerKm = document.getElementById('is_per_km');
-        
-        if (scope === 'INDIVIDUAL' && isPerKm.checked) {
-            alert('Distance-based fees work best with INDIVIDUAL scope for transport fees.');
-        }
-    });
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+
+    if (name.length < 3) {
+        e.preventDefault();
+        alert('Fee name must be at least 3 characters long');
+        return false;
+    }
+});
 </script>
 {% endblock %}

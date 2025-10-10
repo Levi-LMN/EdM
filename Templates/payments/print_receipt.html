@@ -250,16 +250,6 @@
                 </tr>
 
                 <!-- Fees Arrears -->
-                {% set total_assessed = payment.student.fee_assessments|sum(attribute='amount') or 0 %}
-                {% set total_paid_allocations = [] %}
-                {% for assessment in payment.student.fee_assessments %}
-                    {% for alloc in assessment.allocations %}
-                        {% set _ = total_paid_allocations.append(alloc.amount) %}
-                    {% endfor %}
-                {% endfor %}
-                {% set total_paid = total_paid_allocations|sum or 0 %}
-                {% set current_balance = total_assessed - total_paid %}
-                
                 <tr class="total-row">
                     <td>FEES ARREARS</td>
                     <td class="amount-col">{{ "%.2f"|format(current_balance) }}</td>
