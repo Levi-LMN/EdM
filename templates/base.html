@@ -50,7 +50,7 @@
             box-shadow: var(--shadow-light);
             height: 100vh;
             position: fixed;
-            width: 16.666667%; /* col-md-2 equivalent */
+            width: 16.666667%;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -109,7 +109,6 @@
             font-weight: 300;
         }
 
-        /* Navigation Container - Now scrollable and includes user profile */
         .nav-container {
             flex: 1;
             overflow-y: auto;
@@ -118,7 +117,6 @@
             min-height: 0;
         }
 
-        /* User Profile Section - Now inside scrollable container */
         .user-profile {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -142,6 +140,7 @@
             border-radius: 50%;
             margin-bottom: 0.3rem;
             border: 2px solid rgba(255, 255, 255, 0.3);
+            object-fit: cover;
         }
 
         .user-name {
@@ -158,18 +157,26 @@
             margin: 0 0 0.3rem 0;
         }
 
-        .logout-btn {
+        .profile-actions {
+            display: flex;
+            gap: 0.3rem;
+            justify-content: center;
+            margin-top: 0.3rem;
+        }
+
+        .profile-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: rgba(255, 255, 255, 0.8);
-            font-size: 0.65rem;
-            padding: 0.2rem 0.6rem;
+            font-size: 0.6rem;
+            padding: 0.2rem 0.5rem;
             border-radius: 6px;
-            margin-top: 0.2rem;
             transition: var(--transition);
+            text-decoration: none;
+            display: inline-block;
         }
 
-        .logout-btn:hover {
+        .profile-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             color: white;
         }
@@ -227,8 +234,8 @@
             background: transparent;
             padding: 2rem;
             border-radius: var(--border-radius) 0 0 var(--border-radius);
-            margin-left: 16.666667%; /* Offset for fixed sidebar */
-            width: 83.333333%; /* Remaining width */
+            margin-left: 16.666667%;
+            width: 83.333333%;
         }
 
         .page-header {
@@ -302,6 +309,7 @@
 
         .btn-outline-primary:hover {
             background: #667eea;
+            color: white;
         }
 
         .table {
@@ -335,9 +343,11 @@
         @keyframes slideIn {
             from {
                 opacity: 0;
+                transform: translateY(-10px);
             }
             to {
                 opacity: 1;
+                transform: translateY(0);
             }
         }
 
@@ -354,6 +364,11 @@
         .alert-info {
             border-left-color: #4299e1;
             background: linear-gradient(135deg, rgba(66, 153, 225, 0.1), rgba(66, 153, 225, 0.05));
+        }
+
+        .alert-warning {
+            border-left-color: #ed8936;
+            background: linear-gradient(135deg, rgba(237, 137, 54, 0.1), rgba(237, 137, 54, 0.05));
         }
 
         /* Mobile Responsiveness */
@@ -504,7 +519,7 @@
                         <p class="brand-subtitle">Smart School Solutions</p>
                     </div>
 
-                    <!-- Navigation Container - Now includes everything and is scrollable -->
+                    <!-- Navigation Container -->
                     <div class="nav-container">
                         <!-- Navigation Sections -->
                         <div class="nav-section">
@@ -634,22 +649,41 @@
                             </ul>
                         </div>
 
-                        <!-- User Profile Section - Now at the bottom of scrollable content -->
+                        <!-- Admin Section -->
+                        {% if current_user.is_authenticated and current_user.role.value == 'ADMIN' %}
+                        <div class="nav-section">
+                            <div class="nav-section-title">Administration</div>
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ url_for('user_management') }}">
+                                        <i class="fas fa-users-cog"></i>User Management
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- User Profile Section -->
                         {% if current_user.is_authenticated %}
                         <div class="user-profile">
                             {% if current_user.profile_pic %}
                                 <img src="{{ current_user.profile_pic }}" alt="Profile" class="user-avatar">
                             {% else %}
-                                <div class="user-avatar d-flex align-items-center justify-content-center"
+                                <div class="user-avatar d-flex align-items-center justify-content-center mx-auto"
                                      style="background: rgba(255,255,255,0.2);">
                                     <i class="fas fa-user" style="color: white; font-size: 0.9rem;"></i>
                                 </div>
                             {% endif %}
                             <div class="user-name">{{ current_user.name }}</div>
                             <div class="user-role">{{ current_user.role.value }}</div>
-                            <a href="{{ url_for('logout') }}" class="btn logout-btn">
-                                <i class="fas fa-sign-out-alt me-1"></i>Logout
-                            </a>
+                            <div class="profile-actions">
+                                <a href="{{ url_for('user_profile') }}" class="profile-btn">
+                                    <i class="fas fa-user-circle me-1"></i>Profile
+                                </a>
+                                <a href="{{ url_for('logout') }}" class="profile-btn">
+                                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                                </a>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -670,7 +704,7 @@
                     {% if messages %}
                         {% for category, message in messages %}
                             <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'check-circle' }} me-2"></i>
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'exclamation-circle' if category == 'warning' else 'check-circle' }} me-2"></i>
                                 {{ message }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
@@ -744,14 +778,12 @@
             });
         }, 5000);
 
-        // Add active class to current nav item with smooth transition
+        // Add active class to current nav item
         $(document).ready(function() {
             var currentPath = window.location.pathname;
 
-            // Remove any existing active classes first
             $('.nav-link').removeClass('active');
 
-            // Find and activate the matching nav link
             $('.nav-link').each(function() {
                 var linkHref = $(this).attr('href');
                 if (linkHref && linkHref === currentPath) {
@@ -759,20 +791,20 @@
                 }
             });
 
-            // Also handle partial matches for dynamic routes
             if (!$('.nav-link.active').length) {
                 $('.nav-link').each(function() {
                     var linkHref = $(this).attr('href');
                     if (linkHref && currentPath.startsWith(linkHref) && linkHref !== '/') {
                         $(this).addClass('active');
-                        return false; // Break loop after first match
+                        return false;
                     }
                 });
             }
 
-            // Restore sidebar scroll position
             restoreSidebarPosition();
         });
+
+
 
         // Add loading states for better UX
         $('form').on('submit', function() {

@@ -4221,6 +4221,240 @@ def reactivate_vehicle(vehicle_id):
     flash(f'Vehicle {vehicle.registration_number} reactivated successfully', 'success')
     return redirect(url_for('vehicle_detail', vehicle_id=vehicle_id))
 
+
+# Add these routes to your app.py file
+
+# ===========================
+#  USER MANAGEMENT ROUTES
+# ===========================
+
+@app.route('/users')
+@login_required
+def user_management():
+    """View all users (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        flash('Access denied. Only administrators can manage users.', 'error')
+        return redirect(url_for('dashboard'))
+
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('users/list.html', users=users)
+
+
+@app.route('/api/user/<int:user_id>')
+@login_required
+def get_user_api(user_id):
+    """API endpoint to get user data"""
+    if current_user.role != UserRole.ADMIN:
+        return jsonify({'error': 'Access denied'}), 403
+
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'role': user.role.value,
+        'is_active': user.is_active,
+        'google_id': user.google_id,
+        'profile_pic': user.profile_pic,
+        'created_at': user.created_at.strftime('%Y-%m-%d %H:%M'),
+        'last_login': user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else None
+    })
+
+
+@app.route('/users/edit/<int:user_id>', methods=['POST'])
+@login_required
+def edit_user(user_id):
+    """Edit user details (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        flash('Access denied. Only administrators can edit users.', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(user_id)
+
+    # Prevent editing your own account through this route
+    if user.id == current_user.id:
+        flash('You cannot edit your own account through this interface.', 'warning')
+        return redirect(url_for('user_management'))
+
+    try:
+        # Update user details
+        user.name = request.form['name']
+        user.email = request.form['email']
+        user.role = UserRole(request.form['role'])
+        user.is_active = bool(request.form.get('is_active'))
+
+        db.session.commit()
+
+        flash(f'User {user.name} updated successfully', 'success')
+        return redirect(url_for('user_management'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating user: {str(e)}', 'error')
+        return redirect(url_for('user_management'))
+
+
+@app.route('/users/deactivate/<int:user_id>', methods=['POST'])
+@login_required
+def deactivate_user(user_id):
+    """Deactivate a user (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        flash('Access denied. Only administrators can deactivate users.', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(user_id)
+
+    # Prevent deactivating yourself
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account.', 'warning')
+        return redirect(url_for('user_management'))
+
+    # Check if this is the last active admin
+    if user.role == UserRole.ADMIN:
+        active_admins = User.query.filter_by(role=UserRole.ADMIN, is_active=True).count()
+        if active_admins <= 1:
+            flash('Cannot deactivate the last active administrator.', 'error')
+            return redirect(url_for('user_management'))
+
+    user.is_active = False
+    db.session.commit()
+
+    flash(f'User {user.name} has been deactivated', 'success')
+    return redirect(url_for('user_management'))
+
+
+@app.route('/users/reactivate/<int:user_id>', methods=['POST'])
+@login_required
+def reactivate_user(user_id):
+    """Reactivate a user (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        flash('Access denied. Only administrators can reactivate users.', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(user_id)
+    user.is_active = True
+    db.session.commit()
+
+    flash(f'User {user.name} has been reactivated', 'success')
+    return redirect(url_for('user_management'))
+
+
+@app.route('/users/delete/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    """Delete a user permanently (Admin only)"""
+    if current_user.role != UserRole.ADMIN:
+        flash('Access denied. Only administrators can delete users.', 'error')
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(user_id)
+
+    # Prevent deleting yourself
+    if user.id == current_user.id:
+        flash('You cannot delete your own account.', 'error')
+        return redirect(url_for('user_management'))
+
+    # Check if this is the last admin
+    if user.role == UserRole.ADMIN:
+        admin_count = User.query.filter_by(role=UserRole.ADMIN).count()
+        if admin_count <= 1:
+            flash('Cannot delete the last administrator account.', 'error')
+            return redirect(url_for('user_management'))
+
+    # Check if user has associated records
+    payments_count = Payment.query.filter_by(processed_by=user.id).count()
+    assessments_count = FeeAssessment.query.filter_by(assessed_by=user.id).count()
+    expenses_count = Expense.query.filter_by(created_by=user.id).count()
+
+    if payments_count > 0 or assessments_count > 0 or expenses_count > 0:
+        flash(f'Cannot delete user {user.name} - they have associated records. Consider deactivating instead.', 'error')
+        return redirect(url_for('user_management'))
+
+    try:
+        user_name = user.name
+        db.session.delete(user)
+        db.session.commit()
+
+        flash(f'User {user_name} has been permanently deleted', 'success')
+        return redirect(url_for('user_management'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user: {str(e)}', 'error')
+        return redirect(url_for('user_management'))
+
+
+@app.route('/users/change-role/<int:user_id>', methods=['POST'])
+@login_required
+def change_user_role(user_id):
+    """Quick role change endpoint"""
+    if current_user.role != UserRole.ADMIN:
+        return jsonify({'error': 'Access denied'}), 403
+
+    user = User.query.get_or_404(user_id)
+
+    if user.id == current_user.id:
+        return jsonify({'error': 'Cannot change your own role'}), 400
+
+    try:
+        new_role = request.json.get('role')
+        user.role = UserRole(new_role)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'Role changed to {new_role}',
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'role': user.role.value
+            }
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
+@app.route('/profile')
+@login_required
+def user_profile():
+    """View current user's profile"""
+    # Get user's activity stats
+    payments_processed = Payment.query.filter_by(processed_by=current_user.id).count()
+    assessments_created = FeeAssessment.query.filter_by(assessed_by=current_user.id).count()
+    expenses_created = Expense.query.filter_by(created_by=current_user.id).count()
+
+    stats = {
+        'payments_processed': payments_processed,
+        'assessments_created': assessments_created,
+        'expenses_created': expenses_created
+    }
+
+    return render_template('users/profile.html', stats=stats)
+
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    """Edit current user's own profile"""
+    if request.method == 'POST':
+        try:
+            current_user.name = request.form['name']
+
+            # Users cannot change their own role or email
+            # Email is managed by Google OAuth
+
+            db.session.commit()
+            flash('Profile updated successfully', 'success')
+            return redirect(url_for('user_profile'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating profile: {str(e)}', 'error')
+
+    return render_template('users/edit_profile.html')
+
 # ===========================
 #  MAIN APPLICATION
 # ===========================

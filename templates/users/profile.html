@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - EduManage Pro{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('edit_profile') }}" class="btn btn-outline-primary">
+    <i class="fas fa-edit me-2"></i>Edit Profile
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Profile Card -->
+        <div class="card">
+            <div class="card-body text-center">
+                {% if current_user.profile_pic %}
+                    <img src="{{ current_user.profile_pic }}" 
+                         alt="{{ current_user.name }}" 
+                         class="rounded-circle mb-3"
+                         style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+                         style="width: 150px; height: 150px; font-size: 4rem;">
+                        {{ current_user.name[0].upper() }}
+                    </div>
+                {% endif %}
+                
+                <h4 class="mb-1">{{ current_user.name }}</h4>
+                <p class="text-muted mb-2">{{ current_user.email }}</p>
+                
+                <span class="badge {{ 'bg-danger' if current_user.role.value == 'ADMIN' else 'bg-primary' if current_user.role.value == 'PRINCIPAL' else 'bg-success' }} mb-3">
+                    {{ current_user.role.value }}
+                </span>
+                
+                <hr>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted">Member Since</small>
+                        <div class="fw-bold">{{ current_user.created_at.strftime('%b %Y') }}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Last Login</small>
+                        <div class="fw-bold">
+                            {% if current_user.last_login %}
+                                {{ current_user.last_login.strftime('%d %b') }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Role Information -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>Role Permissions
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if current_user.role.value == 'ADMIN' %}
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Full system access</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Manage users</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Delete records</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View all reports</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Configure system</li>
+                    </ul>
+                {% elif current_user.role.value == 'PRINCIPAL' %}
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View all reports</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Manage students</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>View finances</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Approve expenses</li>
+                        <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>Delete records</li>
+                    </ul>
+                {% else %}
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Process payments</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Manage students</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Generate reports</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Record expenses</li>
+                        <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>Delete records</li>
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Activity Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-money-bill-wave fa-2x text-success mb-2"></i>
+                        <h3 class="mb-0">{{ stats.payments_processed }}</h3>
+                        <small class="text-muted">Payments Processed</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-file-invoice fa-2x text-primary mb-2"></i>
+                        <h3 class="mb-0">{{ stats.assessments_created }}</h3>
+                        <small class="text-muted">Assessments Created</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-receipt fa-2x text-warning mb-2"></i>
+                        <h3 class="mb-0">{{ stats.expenses_created }}</h3>
+                        <small class="text-muted">Expenses Recorded</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Account Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Full Name</label>
+                        <div class="fw-bold">{{ current_user.name }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Email Address</label>
+                        <div class="fw-bold">{{ current_user.email }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Role</label>
+                        <div class="fw-bold">{{ current_user.role.value }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Account Status</label>
+                        <div>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Member Since</label>
+                        <div class="fw-bold">{{ current_user.created_at.strftime('%B %d, %Y') }}</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Last Login</label>
+                        <div class="fw-bold">
+                            {% if current_user.last_login %}
+                                {{ current_user.last_login.strftime('%B %d, %Y at %I:%M %p') }}
+                            {% else %}
+                                Never logged in
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="text-muted small">Google Account</label>
+                        <div class="fw-bold">
+                            {% if current_user.google_id %}
+                                <i class="fab fa-google text-danger me-2"></i>Connected
+                            {% else %}
+                                Not connected
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Activity tracking coming soon. This will show your recent actions in the system.
+                </div>
+                
+                <div class="text-center py-4">
+                    <p class="text-muted">Your contributions to the system:</p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <i class="fas fa-money-check-alt fa-2x text-success"></i>
+                            </div>
+                            <div class="fw-bold">{{ stats.payments_processed }}</div>
+                            <small class="text-muted">Payments</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <i class="fas fa-clipboard-check fa-2x text-primary"></i>
+                            </div>
+                            <div class="fw-bold">{{ stats.assessments_created }}</div>
+                            <small class="text-muted">Assessments</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <i class="fas fa-file-invoice-dollar fa-2x text-warning"></i>
+                            </div>
+                            <div class="fw-bold">{{ stats.expenses_created }}</div>
+                            <small class="text-muted">Expenses</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Animate stats counters
+    $('.card h3').each(function() {
+        const $this = $(this);
+        const countTo = parseInt($this.text());
+        
+        $({ countNum: 0 }).animate({
+            countNum: countTo
+        }, {
+            duration: 1000,
+            easing: 'swing',
+            step: function() {
+                $this.text(Math.floor(this.countNum));
+            },
+            complete: function() {
+                $this.text(countTo);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

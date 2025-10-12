@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - EduManage Pro{% endblock %}
+{% block page_title %}Edit My Profile{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('user_profile') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Profile
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-edit me-2"></i>Edit Profile Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Profile Picture -->
+                <div class="text-center mb-4">
+                    {% if current_user.profile_pic %}
+                        <img src="{{ current_user.profile_pic }}" 
+                             alt="{{ current_user.name }}" 
+                             class="rounded-circle mb-3"
+                             style="width: 120px; height: 120px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+                             style="width: 120px; height: 120px; font-size: 3rem;">
+                            {{ current_user.name[0].upper() }}
+                        </div>
+                    {% endif %}
+                    <p class="text-muted small">
+                        <i class="fab fa-google me-1"></i>
+                        Profile picture managed by Google Account
+                    </p>
+                </div>
+
+                <form method="POST">
+                    <!-- Name -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            Full Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="name" 
+                               name="name" 
+                               value="{{ current_user.name }}"
+                               required>
+                        <div class="form-text">This is your display name in the system</div>
+                    </div>
+
+                    <!-- Email (Read-only) -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" 
+                               class="form-control" 
+                               id="email" 
+                               value="{{ current_user.email }}"
+                               readonly
+                               disabled>
+                        <div class="form-text">
+                            <i class="fas fa-lock me-1"></i>
+                            Email is managed through your Google account and cannot be changed here
+                        </div>
+                    </div>
+
+                    <!-- Role (Read-only) -->
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="role" 
+                               value="{{ current_user.role.value }}"
+                               readonly
+                               disabled>
+                        <div class="form-text">
+                            <i class="fas fa-lock me-1"></i>
+                            Your role can only be changed by an administrator
+                        </div>
+                    </div>
+
+                    <!-- Account Info -->
+                    <div class="alert alert-info">
+                        <strong><i class="fas fa-info-circle me-2"></i>Account Information</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Member since: {{ current_user.created_at.strftime('%B %d, %Y') }}</li>
+                            <li>Last login: {{ current_user.last_login.strftime('%B %d, %Y at %I:%M %p') if current_user.last_login else 'Never' }}</li>
+                            <li>Google Account: Connected</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('user_profile') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Need Help?
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>To change your email:</strong></p>
+                <p class="text-muted small">Your email is linked to your Google account. To change it, update your Google account email and sign in again.</p>
+                
+                <hr>
+                
+                <p class="mb-2"><strong>To change your role:</strong></p>
+                <p class="text-muted small">Contact a system administrator to request a role change.</p>
+                
+                <hr>
+                
+                <p class="mb-2"><strong>To update your profile picture:</strong></p>
+                <p class="text-muted small">Update your Google account profile picture and it will sync automatically.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Form validation
+    $('#name').on('input', function() {
+        const name = $(this).val().trim();
+        if (name.length < 2) {
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).addClass('is-valid');
+        }
+    });
+
+    // Confirm before saving
+    $('form').on('submit', function(e) {
+        const name = $('#name').val().trim();
+        if (name.length < 2) {
+            e.preventDefault();
+            alert('Please enter a valid name (at least 2 characters)');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}
