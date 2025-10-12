@@ -4033,6 +4033,194 @@ def generate_custom_report():
         flash('Invalid report type selected', 'error')
         return redirect(url_for('reports'))
 
+
+# Add these routes to your app.py file
+
+# ===========================
+#  EDIT EXPENSE ROUTE
+# ===========================
+@app.route('/expenses/edit/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_expense(expense_id):
+    """Edit an existing expense record"""
+    expense = Expense.query.get_or_404(expense_id)
+
+    if request.method == 'POST':
+        try:
+            # Store old values for audit log
+            old_amount = expense.amount
+            old_category = expense.category.name
+            old_date = expense.expense_date
+
+            # Update expense details
+            expense.category_id = int(request.form['category_id'])
+            expense.expense_date = datetime.strptime(request.form['expense_date'], '%Y-%m-%d').date()
+            expense.description = request.form['description']
+            expense.amount = Decimal(request.form['amount'])
+            expense.payment_method = PaymentMode(request.form['payment_method']) if request.form.get(
+                'payment_method') else None
+            expense.reference_number = request.form.get('reference_number')
+            expense.supplier_name = request.form.get('supplier_name')
+            expense.approved_by = request.form.get('approved_by')
+
+            # Update notes with audit trail
+            edit_reason = request.form.get('edit_reason', '')
+            existing_notes = expense.notes or ''
+
+            audit_note = f"\n\n[EDITED on {datetime.now().strftime('%Y-%m-%d %H:%M')} by {current_user.name}]\n"
+            audit_note += f"Reason: {edit_reason}\n"
+            audit_note += f"Changes: Amount {old_amount} -> {expense.amount}, "
+            audit_note += f"Date {old_date} -> {expense.expense_date}, "
+            audit_note += f"Category {old_category} -> {expense.category.name}"
+
+            expense.notes = existing_notes + audit_note
+
+            # Append new notes if provided
+            new_notes = request.form.get('notes', '').strip()
+            if new_notes and new_notes != existing_notes:
+                expense.notes += f"\n{new_notes}"
+
+            db.session.commit()
+
+            flash(f'Expense updated successfully', 'success')
+            return redirect(url_for('expense_list'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating expense: {str(e)}', 'error')
+
+    categories = ExpenseCategory.query.filter_by(is_active=True).all()
+    return render_template('expenses/edit.html', expense=expense, categories=categories)
+
+
+@app.route('/expenses/delete/<int:expense_id>', methods=['POST'])
+@login_required
+def delete_expense(expense_id):
+    """Delete an expense record (admin only)"""
+    expense = Expense.query.get_or_404(expense_id)
+
+    # Require admin role for deletion
+    if current_user.role != UserRole.ADMIN:
+        flash('Only administrators can delete expense records', 'error')
+        return redirect(url_for('expense_list'))
+
+    try:
+        expense_desc = expense.description[:50]
+        expense_amount = expense.amount
+
+        db.session.delete(expense)
+        db.session.commit()
+
+        flash(f'Expense "{expense_desc}..." (KSh {expense_amount}) deleted successfully', 'success')
+        return redirect(url_for('expense_list'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting expense: {str(e)}', 'error')
+        return redirect(url_for('expense_list'))
+
+
+# ===========================
+#  EDIT VEHICLE ROUTE
+# ===========================
+@app.route('/vehicles/edit/<int:vehicle_id>', methods=['GET', 'POST'])
+@login_required
+def edit_vehicle(vehicle_id):
+    """Edit an existing vehicle record"""
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+
+    if request.method == 'POST':
+        try:
+            # Check if registration number is being changed
+            new_reg = request.form['registration_number'].upper()
+            if new_reg != vehicle.registration_number:
+                # Check if new registration number already exists
+                existing = Vehicle.query.filter_by(registration_number=new_reg).first()
+                if existing:
+                    flash(f'Vehicle with registration number {new_reg} already exists', 'error')
+                    return render_template('vehicles/edit.html', vehicle=vehicle)
+
+            # Update vehicle details
+            vehicle.registration_number = new_reg
+            vehicle.make = request.form.get('make', '').strip()
+            vehicle.model = request.form.get('model', '').strip()
+            vehicle.capacity = int(request.form['capacity']) if request.form.get('capacity') else None
+            vehicle.driver_name = request.form.get('driver_name', '').strip()
+            vehicle.driver_phone = request.form.get('driver_phone', '').strip()
+            vehicle.route_description = request.form.get('route_description', '').strip()
+            vehicle.is_active = bool(request.form.get('is_active'))
+
+            db.session.commit()
+
+            flash(f'Vehicle {vehicle.registration_number} updated successfully', 'success')
+            return redirect(url_for('vehicle_detail', vehicle_id=vehicle_id))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating vehicle: {str(e)}', 'error')
+
+    return render_template('vehicles/edit.html', vehicle=vehicle)
+
+
+@app.route('/vehicles/delete/<int:vehicle_id>', methods=['POST'])
+@login_required
+def delete_vehicle(vehicle_id):
+    """Delete a vehicle record"""
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+
+    # Check if vehicle has students assigned
+    student_count = Student.query.filter_by(vehicle_id=vehicle_id, is_active=True).count()
+    if student_count > 0:
+        flash(
+            f'Cannot delete vehicle {vehicle.registration_number} - it has {student_count} active students assigned. Remove students first or deactivate the vehicle.',
+            'error')
+        return redirect(url_for('vehicle_detail', vehicle_id=vehicle_id))
+
+    # Require admin role for deletion
+    if current_user.role != UserRole.ADMIN:
+        flash('Only administrators can delete vehicle records', 'error')
+        return redirect(url_for('vehicle_detail', vehicle_id=vehicle_id))
+
+    try:
+        reg_number = vehicle.registration_number
+
+        db.session.delete(vehicle)
+        db.session.commit()
+
+        flash(f'Vehicle {reg_number} deleted successfully', 'success')
+        return redirect(url_for('vehicle_list'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting vehicle: {str(e)}', 'error')
+        return redirect(url_for('vehicle_detail', vehicle_id=vehicle_id))
+
+
+@app.route('/vehicles/deactivate/<int:vehicle_id>', methods=['POST'])
+@login_required
+def deactivate_vehicle(vehicle_id):
+    """Deactivate a vehicle (soft delete)"""
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+
+    vehicle.is_active = False
+    db.session.commit()
+
+    flash(f'Vehicle {vehicle.registration_number} deactivated successfully', 'success')
+    return redirect(url_for('vehicle_detail', vehicle_id=vehicle_id))
+
+
+@app.route('/vehicles/reactivate/<int:vehicle_id>', methods=['POST'])
+@login_required
+def reactivate_vehicle(vehicle_id):
+    """Reactivate a vehicle"""
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+
+    vehicle.is_active = True
+    db.session.commit()
+
+    flash(f'Vehicle {vehicle.registration_number} reactivated successfully', 'success')
+    return redirect(url_for('vehicle_detail', vehicle_id=vehicle_id))
+
 # ===========================
 #  MAIN APPLICATION
 # ===========================

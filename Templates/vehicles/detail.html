@@ -5,10 +5,10 @@
 
 {% block page_actions %}
 <div class="btn-group">
-    <button class="btn btn-outline-primary" onclick="editVehicle()">
+    <a href="{{ url_for('edit_vehicle', vehicle_id=vehicle.id) }}" class="btn btn-outline-primary">
         <i class="fas fa-edit me-2"></i>Edit Vehicle
-    </button>
-    <button class="btn btn-outline-info" onclick="printReport()">
+    </a>
+    <button class="btn btn-outline-info" onclick="window.print()">
         <i class="fas fa-print me-2"></i>Print Report
     </button>
     <a href="{{ url_for('vehicle_list') }}" class="btn btn-outline-secondary">
@@ -170,16 +170,10 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('student_detail', student_id=student.id) }}"
-                                               class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <button class="btn btn-outline-warning btn-sm"
-                                                    onclick="removeFromVehicle({{ student.id }}, '{{ student.full_name }}')">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
+                                        <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -202,7 +196,7 @@
                         <h5 class="text-muted">No Students Assigned</h5>
                         <p class="text-muted">This vehicle has no students currently assigned to it.</p>
                         <a href="{{ url_for('student_list') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-plus me-2"></i>Assign Students
+                            <i class="fas fa-search me-2"></i>Browse Students
                         </a>
                     </div>
                 {% endif %}
@@ -285,18 +279,41 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary btn-sm" onclick="assignStudents()">
-                        <i class="fas fa-user-plus me-2"></i>Assign Students
+                    <a href="{{ url_for('edit_vehicle', vehicle_id=vehicle.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit me-2"></i>Edit Vehicle Details
+                    </a>
+                    <a href="{{ url_for('student_list') }}?vehicle_id={{ vehicle.id }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-list me-2"></i>View All Students
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Print Report
                     </button>
-                    <button class="btn btn-outline-info btn-sm" onclick="viewRoute()">
-                        <i class="fas fa-map-marked-alt me-2"></i>View Route
-                    </button>
-                    <button class="btn btn-outline-warning btn-sm" onclick="maintenanceLog()">
-                        <i class="fas fa-wrench me-2"></i>Maintenance Log
-                    </button>
-                    <button class="btn btn-outline-success btn-sm" onclick="generateReport()">
-                        <i class="fas fa-file-alt me-2"></i>Generate Report
-                    </button>
+
+                    <hr class="my-2">
+
+                    {% if vehicle.is_active %}
+                        <form method="POST" action="{{ url_for('deactivate_vehicle', vehicle_id=vehicle.id) }}"
+                              onsubmit="return confirm('Deactivate this vehicle?');">
+                            <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-pause-circle me-2"></i>Deactivate Vehicle
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('reactivate_vehicle', vehicle_id=vehicle.id) }}">
+                            <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-play-circle me-2"></i>Reactivate Vehicle
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if current_user.role.value == 'ADMIN' %}
+                        <form method="POST" action="{{ url_for('delete_vehicle', vehicle_id=vehicle.id) }}"
+                              onsubmit="return confirm('Are you sure you want to permanently delete this vehicle? This action cannot be undone!');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="fas fa-trash me-2"></i>Delete Vehicle
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -306,36 +323,6 @@
 
 {% block scripts %}
 <script>
-function editVehicle() {
-    alert('Edit functionality will be implemented');
-}
-
-function printReport() {
-    window.print();
-}
-
-function removeFromVehicle(studentId, studentName) {
-    if (confirm(`Remove ${studentName} from this vehicle?`)) {
-        alert('Remove functionality will be implemented');
-    }
-}
-
-function assignStudents() {
-    alert('Assign students functionality will be implemented');
-}
-
-function viewRoute() {
-    alert('Route mapping functionality will be implemented');
-}
-
-function maintenanceLog() {
-    alert('Maintenance log functionality will be implemented');
-}
-
-function generateReport() {
-    alert('Report generation functionality will be implemented');
-}
-
 $(document).ready(function() {
     // Add hover effects to student rows
     $('tbody tr').hover(

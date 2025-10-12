@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Vehicle - EduManage Pro{% endblock %}
+{% block page_title %}Edit Vehicle{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Vehicle
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bus me-2"></i>Edit Vehicle Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="vehicleForm">
+                    <div class="row">
+                        <!-- Registration Number -->
+                        <div class="col-md-6 mb-3">
+                            <label for="registration_number" class="form-label">
+                                Registration Number <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control text-uppercase" 
+                                   id="registration_number" 
+                                   name="registration_number" 
+                                   value="{{ vehicle.registration_number }}"
+                                   required>
+                        </div>
+
+                        <!-- Capacity -->
+                        <div class="col-md-6 mb-3">
+                            <label for="capacity" class="form-label">Capacity</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="capacity" 
+                                   name="capacity" 
+                                   value="{{ vehicle.capacity or '' }}"
+                                   min="1"
+                                   placeholder="Number of students">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Make -->
+                        <div class="col-md-6 mb-3">
+                            <label for="make" class="form-label">Make</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="make" 
+                                   name="make" 
+                                   value="{{ vehicle.make or '' }}"
+                                   placeholder="e.g., Toyota, Nissan">
+                        </div>
+
+                        <!-- Model -->
+                        <div class="col-md-6 mb-3">
+                            <label for="model" class="form-label">Model</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="model" 
+                                   name="model" 
+                                   value="{{ vehicle.model or '' }}"
+                                   placeholder="e.g., Hiace, Caravan">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Driver Name -->
+                        <div class="col-md-6 mb-3">
+                            <label for="driver_name" class="form-label">Driver Name</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="driver_name" 
+                                   name="driver_name" 
+                                   value="{{ vehicle.driver_name or '' }}"
+                                   placeholder="Full name of driver">
+                        </div>
+
+                        <!-- Driver Phone -->
+                        <div class="col-md-6 mb-3">
+                            <label for="driver_phone" class="form-label">Driver Phone</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="driver_phone" 
+                                   name="driver_phone" 
+                                   value="{{ vehicle.driver_phone or '' }}"
+                                   placeholder="e.g., 0712345678">
+                        </div>
+                    </div>
+
+                    <!-- Route Description -->
+                    <div class="mb-3">
+                        <label for="route_description" class="form-label">Route Description</label>
+                        <textarea class="form-control" 
+                                  id="route_description" 
+                                  name="route_description" 
+                                  rows="3"
+                                  placeholder="Describe the route this vehicle covers">{{ vehicle.route_description or '' }}</textarea>
+                        <div class="form-text">Enter the areas and stops this vehicle covers</div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="is_active" 
+                                   name="is_active" 
+                                   value="1"
+                                   {% if vehicle.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                Vehicle is Active
+                            </label>
+                        </div>
+                        <div class="form-text">Inactive vehicles won't be available for student assignment</div>
+                    </div>
+
+                    <!-- Current Students Warning -->
+                    {% if vehicle.students|length > 0 %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> This vehicle currently has {{ vehicle.students|length }} student(s) assigned. 
+                        Deactivating it will not automatically remove these assignments.
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('vehicle_detail', vehicle_id=vehicle.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Vehicle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Vehicle Statistics -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Current Statistics
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="text-muted small">Assigned Students</div>
+                        <div class="h4 mb-0">{{ vehicle.students|length }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Capacity</div>
+                        <div class="h4 mb-0">{{ vehicle.capacity or 'N/A' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Status</div>
+                        <div class="h4 mb-0">
+                            <span class="badge {{ 'bg-success' if vehicle.is_active else 'bg-warning' }}">
+                                {{ 'Active' if vehicle.is_active else 'Inactive' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Convert registration number to uppercase
+    $('#registration_number').on('input', function() {
+        $(this).val($(this).val().toUpperCase());
+    });
+
+    // Phone number formatting
+    $('#driver_phone').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length > 10) {
+            value = value.substr(0, 10);
+        }
+        $(this).val(value);
+    });
+
+    // Form validation
+    $('#vehicleForm').on('submit', function(e) {
+        const capacity = parseInt($('#capacity').val());
+        const assignedStudents = {{ vehicle.students|length }};
+
+        if (capacity && capacity < assignedStudents) {
+            if (!confirm(`Warning: You are setting capacity to ${capacity} but there are ${assignedStudents} students assigned. Continue?`)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        const isActive = $('#is_active').is(':checked');
+        if (!isActive && assignedStudents > 0) {
+            if (!confirm(`Warning: Deactivating this vehicle with ${assignedStudents} assigned students. Continue?`)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+
+    // Highlight required fields
+    $('input[required], select[required], textarea[required]').each(function() {
+        if (!$(this).val()) {
+            $(this).addClass('border-warning');
+        }
+    });
+
+    $('input[required], select[required], textarea[required]').on('change input', function() {
+        if ($(this).val()) {
+            $(this).removeClass('border-warning');
+        } else {
+            $(this).addClass('border-warning');
+        }
+    });
+});
+</script>
+{% endblock %}

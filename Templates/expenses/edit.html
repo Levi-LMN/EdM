@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Expense - EduManage Pro{% endblock %}
+{% block page_title %}Edit Expense{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('expense_list') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-2"></i>Back to Expenses
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>Edit Expense Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="expenseForm">
+                    <div class="row">
+                        <!-- Category -->
+                        <div class="col-md-6 mb-3">
+                            <label for="category_id" class="form-label">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" 
+                                        {% if category.id == expense.category_id %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Expense Date -->
+                        <div class="col-md-6 mb-3">
+                            <label for="expense_date" class="form-label">
+                                Expense Date <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="expense_date" 
+                                   name="expense_date" 
+                                   value="{{ expense.expense_date.strftime('%Y-%m-%d') }}"
+                                   required>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">
+                            Description <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="3" 
+                                  required>{{ expense.description }}</textarea>
+                        <div class="form-text">Provide detailed description of the expense</div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Amount -->
+                        <div class="col-md-6 mb-3">
+                            <label for="amount" class="form-label">
+                                Amount (KSh) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="amount" 
+                                   name="amount" 
+                                   step="0.01" 
+                                   value="{{ expense.amount }}"
+                                   required>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div class="col-md-6 mb-3">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select class="form-select" id="payment_method" name="payment_method">
+                                <option value="">Select Payment Method</option>
+                                <option value="CASH" {% if expense.payment_method and expense.payment_method.value == 'CASH' %}selected{% endif %}>Cash</option>
+                                <option value="MPESA" {% if expense.payment_method and expense.payment_method.value == 'MPESA' %}selected{% endif %}>M-Pesa</option>
+                                <option value="BANK" {% if expense.payment_method and expense.payment_method.value == 'BANK' %}selected{% endif %}>Bank Transfer</option>
+                                <option value="CHEQUE" {% if expense.payment_method and expense.payment_method.value == 'CHEQUE' %}selected{% endif %}>Cheque</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Reference Number -->
+                        <div class="col-md-6 mb-3">
+                            <label for="reference_number" class="form-label">
+                                Reference Number
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="reference_number" 
+                                   name="reference_number" 
+                                   value="{{ expense.reference_number or '' }}"
+                                   placeholder="Transaction/Receipt number">
+                        </div>
+
+                        <!-- Supplier Name -->
+                        <div class="col-md-6 mb-3">
+                            <label for="supplier_name" class="form-label">
+                                Supplier/Vendor Name
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="supplier_name" 
+                                   name="supplier_name" 
+                                   value="{{ expense.supplier_name or '' }}"
+                                   placeholder="Name of supplier or vendor">
+                        </div>
+                    </div>
+
+                    <!-- Approved By -->
+                    <div class="mb-3">
+                        <label for="approved_by" class="form-label">
+                            Approved By
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="approved_by" 
+                               name="approved_by" 
+                               value="{{ expense.approved_by or '' }}"
+                               placeholder="Name of approving authority">
+                    </div>
+
+                    <!-- Edit Reason -->
+                    <div class="mb-3">
+                        <label for="edit_reason" class="form-label">
+                            Reason for Editing <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" 
+                                  id="edit_reason" 
+                                  name="edit_reason" 
+                                  rows="2" 
+                                  required
+                                  placeholder="Explain why this expense record is being modified"></textarea>
+                        <div class="form-text">This will be logged in the audit trail</div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" 
+                                  id="notes" 
+                                  name="notes" 
+                                  rows="2">{{ expense.notes or '' }}</textarea>
+                    </div>
+
+                    <!-- Current Notes Display -->
+                    {% if expense.notes %}
+                    <div class="alert alert-info">
+                        <strong><i class="fas fa-info-circle me-2"></i>Current Notes:</strong>
+                        <div class="mt-2">{{ expense.notes }}</div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('expense_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Expense
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Audit Trail -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Record Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">Created By:</small><br>
+                        <strong>{{ expense.creator.name if expense.creator else 'System' }}</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Created At:</small><br>
+                        <strong>{{ expense.created_at.strftime('%Y-%m-%d %H:%M') }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Form validation
+    $('#expenseForm').on('submit', function(e) {
+        const amount = parseFloat($('#amount').val());
+        
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('Amount must be greater than zero');
+            return false;
+        }
+
+        if (!confirm('Are you sure you want to update this expense record?')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Format amount on blur
+    $('#amount').on('blur', function() {
+        const value = parseFloat($(this).val());
+        if (!isNaN(value)) {
+            $(this).val(value.toFixed(2));
+        }
+    });
+});
+</script>
+{% endblock %}
